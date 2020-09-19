@@ -24,23 +24,6 @@ public:
 	{
 		delete material;
 	}
-};
 
-class Group : public Object3D
-{
-
-};
-
-class Sphere : public Object3D
-{
-	Vec3f center;
-	double radius;
-public:
-	Sphere(){}
-	Sphere(Vec3f c, double r)
-	{
-		center = c;
-		radius = r;
-	}
 };
 #endif // !_OBJECT3D_H

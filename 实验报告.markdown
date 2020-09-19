@@ -1,0 +1,262 @@
+###Assignment0
+&emsp;&emsp;这个作业和图形学将要学习主要的知识关系不大，主要是让我们回顾向量、矩阵乘法等基础知识和图形库的使用。作业要求是通过迭代坐标变换生成IFS图形，并且为我们提供了比较详细的模板，我们只需要填鸭式的把内容补全。
+####代码介绍
+&emsp;&emsp;首先是创建一个`Ifs类`，提供坐标变换的功能，这里我们将迭代次数设置为`n`,并且通过随机数选择迭代的矩阵，最后调用`Matrix::Transform`即可。由于这里我是直接以`(size,size)`为边界生成，导致在处理的时候出现了问题并且发现了`Matrix`库的BUG。这里由于在变换时候，对于低维度的向量和高维度的矩阵相乘，会自动在向量后面补1，但是我以`(size,size)`为边界导致没法找到不动点，最后我在`Ifs`类内增加一个`size`变量并且手动进行高维向量的转换
+```C++
+void render(Vec2f& v)
+{
+    for (int i = 0; i < n; i++)
+    {
+        float num = rand() % 100 * 1.0 / 100;
+        float count = 0;
+        for (int j = 0; j < possibiliy.size(); j++)
+        {
+            count += possibiliy[j];
+            if (count > num)
+            {
+                Vec4f tmp(v.x(), v.y(), size, size);
+                matrixs[j].Transform(tmp);
+                v.Set(tmp.x(), tmp.y());
+                break;
+            }
+        }
+    }
+}
+```
+&emsp;&emsp;至于Matrix库的BUG，是他的代码在读取3*3矩阵的时候，continue的条件写错了，应该是`x==3`或者`y==3`时候continue，他这个bug导致第二行和第二列被赋值0，而第三行、第三列却是有值的
+```c++
+void Matrix::Write3x3(FILE* F) const {
+    assert(F != NULL);
+    for (int y = 0; y < 4; y++) {
+        if (y == 2) continue;
+        for (int x = 0; x < 4; x++) {
+            if (x == 2) continue;
+            float tmp = data[y][x];
+            if (fabs(tmp) < 0.00001) tmp = 0;
+            fprintf(F, "%12.6f ", tmp);
+        }
+        fprintf(F, "\n");
+    }
+}
+```
+&emsp;&emsp;然后是主函数部分，一开始先把整个`image`设置为白色我们需要对点进行随机枚举，我这儿直接以`size`为边界进行随机，并且在写入的时候通过`floor()`函数保证数字不越界，将这些点设置为黑色，就能生成预期的图形。
+```c++
+for (int i = 0; i < num_points; i++)
+{
+    Vec2f pixel(rand() % size, rand() % size);
+    ifs.render(pixel);
+    //cout << tmp.x() << " " << tmp.y() << endl;
+    image.SetPixel((int)floor(pixel.x()), (int)floor(pixel.y()), Vec3f(0, 0, 0));
+}
+```
+####结果展示
+#####测试1：谢宾斯基三角形
+指令：`ifs -input sierpinski_triangle.txt -points 10000 -iters 30 -size 200 -output sierpinski_triangle.tga`
+结果：
+![Test](pic/assignment0_1.png)
+#####测试2：铁杉
+指令：`ifs -input fern.txt -points 50000 -iters 30 -size 400 -output fern.tga`
+结果：
+![Test](pic/assignment0_2.png)
+###Assignment1
+&emsp;&emsp;这个作业要求我们用*OrthographicCamera*的方式实现*Ray Cast*, 并且拥有颜色和灰度两种显示方式。这次作业相比上一次，我们需要更多的发挥自己的能力和ppt中的相关知识解决问题，也拥有更高的自由度。
+####代码介绍
+#####Sphere类
+首先是构造函数，有`radius`,`center`和`material`三个参数
+```c++
+Sphere(Vec3f c, double r, Material* material)
+{
+    this->center = c;
+    this->radius = r;
+    this->material = material;
+}
+```
+接着是实现`Intersect`方法，这里我使用了2种方法，第一个就是代数法：
+```c++
+Vec3f source = r.getOrigin();
+source -= center; // 首先变换坐标系，让圆心处于(0,0,0)，这样会方便接下来的计算
+//接下来a,b,c为二元方程a * t^2 + b * t + c = 0的三个系数
+float a = 1;
+float b = r.getDirection().Dot3(source) * 2;
+float c = source.Dot3(source) - radius * radius;
+float d2 = b * b - 4 * a * c;
+// 判断 b * b - 4 * a * c的正负，负代表没有交点
+if (d2 < 0)
+{
+    //cout << "fuck";
+    return false;
+}
+// 计算可行的t，即大于tmin的最小值
+float t1 = (-b - (float)sqrt(d2)) / 2;
+float t2 = (-b - (float)sqrt(d2)) / 2;
+if (tmin < t1)
+{
+    h.set(t1, this->material, r);
+    return true;
+}
+else if (tmin <= t2)
+{
+    h.set(t2, this->material, r);
+    return true;
+}
+return false;
+```
+并且我也尝试了Bonus的几何法，但是存在的问题是只判断了射线源在球外面的情况，且没有考虑t的方向（正负），所以还存在着一点问题，但是由于这个判断比较繁琐所以没有继续实现下去。
+```c++
+Vec3f dis_to_center = r.getOrigin() - center;//射线源到球心的矢量
+//将dis_to_center投影到射线上
+float dis_cast = (float)abs(dis_to_center.Dot3(r.getDirection()) / r.getDirection().Length());
+//计算点到球心的距离
+float ray_center_dis = (float)sqrt(dis_to_center.Length() * dis_to_center.Length() - dis_cast * dis_cast);//
+if (ray_center_dis > radius) //如果球心到射线的距离大于半径，没有交点
+    return false;
+float dis_center_length = dis_to_center.Length();
+float bias = (float)sqrt(radius * radius - ray_center_dis * ray_center_dis);
+//通过几何法计算t并求出大于tmin的值
+if (tmin < dis_cast - bias)
+{
+    h.set(dis_cast - bias, this->material, r);
+    return true;
+}
+else if (tmin <= dis_cast + bias)
+{
+    h.set(dis_cast + bias, this->material, r);
+    return true;
+}
+return false;
+```
+#####Group类
+接着是`Group`类，我通过一个`vector`来存放里面的`Object3D`信息
+```c++
+vector<Object3D*> object_group;
+int count;
+public:
+    Group(int count)
+    {
+        object_group.clear();
+        this->count = count;
+    }
+
+    void addObject(int num, Object3D* object)
+    {
+        object_group.push_back(object);
+    }
+```
+然后是`Intersect`，这个对容器里每一个元素进行检测并且记录一个最近的即可
+```c++
+bool intersect(const Ray& r, Hit& h, float tmin)
+{
+    bool mark = false;
+    for (auto& object : object_group) //遍历每个Obejct3D
+    {
+        Hit hit;
+        if (object->intersect(r, hit, tmin))
+        {
+            if (!mark || hit.getT() < h.getT())
+            {
+                h = hit;
+            }
+            mark = true;
+        }
+    }
+    return mark;
+}
+```
+#####OrthographicCamera实现
+初始化中我们需要把direction进行单位化，并且up可能不是严格垂直于direction，所以需要通过2次叉乘获得垂直于direction的up向量
+```c++
+OrthographicCamera(Vec3f center, Vec3f direction, Vec3f up, float size)
+{
+    this->center = center;
+    this->direction = direction;
+    direction.Normalize();//获得单位向量
+    Vec3f tmp;
+    //两次叉乘
+    Vec3f::Cross3(tmp, direction, up);
+    Vec3f::Cross3(this->up, tmp, direction);
+    this->size = size;
+}
+```
+`generateray`中我们通过输入的偏移量乘以2个方向的向量，就可以获得源点的坐标，然后和direction构造`Ray`返回即可
+```c++
+Ray generateRay(Vec2f point)
+{
+    Vec3f hor, ver;
+    Vec3f::Cross3(hor, direction, up);
+    ver = up;
+    hor.Normalize();
+    ver.Normalize();
+    //点的偏移量乘以方向向量
+    float ch = size * point.x();
+    float cw = size * point.y();
+    hor.Scale(ch, ch, ch);
+    ver.Scale(cw, cw, cw);
+    //获得点的坐标
+    Vec3f from_point = center + hor + ver;
+    return Ray(from_point, direction);
+}
+```
+
+
+#####主循环判断
+主函数由2个for循环遍历Image所有像素点，然后对每个像素点转换成x，y轴偏移量放到camera中进行计算，最后根据返回hit的相关信息填写该像素内容
+```c++
+for (int i = 0; i < image.Width(); i++)
+    {
+        for (int j = 0; j < image.Height(); j++)
+        {
+            //计算x，y的偏移量，范围是[-1/2, 1/2]
+            float x_bias = (i - image.Width() * 1.0 / 2) / image.Width();
+            float y_bias = (j - image.Height() * 1.0 / 2) / image.Height();
+            //输入偏移量构造Ray
+            Ray ray = camera->generateRay(Vec2f(x_bias, y_bias));
+            Hit hit;
+            //检测碰撞
+            if (group->intersect(ray, hit, tmin))
+            {
+                //out_image显示颜色，所以给这个像素设置颜色即可
+                image.SetPixel(i, j, hit.getMaterial()->getDiffuseColor());
+                //距离可视化的图片通过将距离变成(color,color,color)颜色，赋给image1
+                float t = hit.getT();
+                if (t < depth_min)
+                    t = depth_min;
+                if (t > depth_max)
+                    t = depth_max;
+                float color = (1 - (t - depth_min) / (depth_max - depth_min));
+                image1.SetPixel(i, j, Vec3f(color , color, color));
+            }
+            // 如果没有碰撞，则赋予初值
+            else
+            {
+                image.SetPixel(i, j, parser.getBackgroundColor());
+                image1.SetPixel(i, j, Vec3f(0, 0, 0));
+            }
+                
+        }
+    }
+    image.SaveTGA(output_file);//普通照片保存
+    image1.SaveTGA(depth_file);//深度可视化照片保存
+```
+####结果展示
+#####输入一
+指令：`raytracer -input scene1_01.txt -size 200 200 -output output1_01.tga -depth 9 10 depth1_01.tga`
+这个输入只有一个物体
+透视图：
+![Assignment1](pic/assignment1_1.png)
+距离可视化：
+![Assignment1](pic/assignment1_2.png)
+#####输入2
+指令：`-input scene1_05.txt -size 200 200 -output output1_05.tga -depth 14.5 19.5 depth1_05.tga`
+这个输入多个武器，且摄像机的角度是(-1,-1,-1),并且up向量和direction不垂直，可以从图片看到我们的比例是正确的
+透视图：
+![Assignment1](pic/assignment1_3.png)
+距离可视化：
+![Assignment1](pic/assignment1_4.png)
+#####输入三
+指令：`raytracer -input scene1_07.txt -size 200 200 -output output1_07.tga -depth -2 2 depth1_07.tga`
+这个输入有三个武器，且摄像机的中心在一个物体内，存在`t < 0`的情况，这个条件下我们能够正确的处理
+透视图：
+![Assignment1](pic/assignment1_5.png)
+距离可视化：
+![Assignment1](pic/assignment1_6.png)
+其余输出也都验证过了，但是特别的地方就不赘述了

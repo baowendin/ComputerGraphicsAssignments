@@ -114,7 +114,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -139,16 +139,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="group.h" />
     <ClInclude Include="hit.h" />
+    <ClInclude Include="image.h" />
     <ClInclude Include="material.h" />
+    <ClInclude Include="matrix.h" />
     <ClInclude Include="object3d.h" />
+    <ClInclude Include="orthographic.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="raycast.h" />
     <ClInclude Include="scene_parser.h" />
+    <ClInclude Include="sphere.h" />
     <ClInclude Include="vectors.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="image.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="matrix.cpp" />
     <ClCompile Include="raycast.cpp" />
     <ClCompile Include="scene_parser.cpp" />
   </ItemGroup>

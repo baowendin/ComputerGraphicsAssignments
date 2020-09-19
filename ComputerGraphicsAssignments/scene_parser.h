@@ -5,6 +5,8 @@
 #include <assert.h>
 #include "material.h"
 #include "object3d.h"
+#include "group.h"
+#include "sphere.h"
 
 class Camera;
 
