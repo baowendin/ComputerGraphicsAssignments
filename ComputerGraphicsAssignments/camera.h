@@ -1,5 +1,7 @@
 #ifndef _CAMERA_H
 #define _CAMERA_H
+#include "vectors.h"
+#include "ray.h"
 class Camera
 {
 public:

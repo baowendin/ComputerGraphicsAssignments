@@ -254,9 +254,158 @@ for (int i = 0; i < image.Width(); i++)
 ![Assignment1](pic/assignment1_4.png)
 #####输入三
 指令：`raytracer -input scene1_07.txt -size 200 200 -output output1_07.tga -depth -2 2 depth1_07.tga`
-这个输入有三个武器，且摄像机的中心在一个物体内，存在`t < 0`的情况，这个条件下我们能够正确的处理
+这个输入有三个物体，且摄像机的中心在一个物体内，存在`t < 0`的情况，这个条件下我们能够正确的处理
 透视图：
 ![Assignment1](pic/assignment1_5.png)
 距离可视化：
 ![Assignment1](pic/assignment1_6.png)
 其余输出也都验证过了，但是特别的地方就不赘述了
+###Assignment2
+这个实验主要是分为4块：实现漫反射模式，法线可视化，透视相机实现，增加新的Object3D：Triangle（三角形）, Plane（平面）, Transform（变换），接下来我也针对这几个部分进行介绍，虽然这个实验有了上个实验的框架，但是实际写起来还是比较麻烦，仍然需要double click PPT和相关知识
+####Diffuse Shading
+通过PPT中的公式我们可以获得$c_{pixel}  =  c_{ambient} * c_{object} + \sum_iclamped(L_i \cdot N) * c_{light_i} * c_{object} ]$,根据这个公式我们可以写出计算像素位置的diffuse color代码：
+```c++
+Vec3f get_diffuse_color(SceneParser& parser, Hit& hit, bool shade_back)
+{
+    Vec3f ambient = parser.getAmbientLight(), light_sum; 
+    light_sum = ambient;//初值设置为ambient light
+    for (int k = 0; k < parser.getNumLights(); k++)//对每个light进行计算
+    {
+        Light* light = parser.getLight(k);
+        Vec3f p, dir, col;
+        light->getIllumination(p, dir, col);
+        if (shade_back)//如果shade_back, 则需要用abs考虑dot结果是负数的情况，也就是光源照在表面的背面
+            light_sum = light_sum + abs(dir.Dot3(hit.getNormal())) * col;
+        else//否则只要正的结果
+            light_sum = light_sum + max(0, dir.Dot3(hit.getNormal())) * col;
+    }
+    //最后统一点乘Material的Diffuse Color然后返回
+    return light_sum * hit.getMaterial()->getDiffuseColor();
+}
+```
+####Normal Visable Mode
+这个比较简单，我们在`Intersect()`函数的`hit`中增加一个变量`normal`代表法线方向，然后`color`根据`normal`三个分量的绝对值即可，这里注意不能忘了`normal.normalize()`，这个我是在`Intersect()`中进行的,没必要放到外面的函数
+```c++
+Vec3f get_normal_color(Hit& hit)
+{
+    Vec3f normal = hit.getNormal();
+    return Vec3f(abs(normal.x()), abs(normal.y()), abs(normal.z()));//取绝对值返回即可
+}
+
+```
+####Perspective Camera
+构造函数中除了记录必要的信息，通过叉乘算出horitontial矢量
+```c++
+PerspectiveCamera(Vec3f center, Vec3f& direction, Vec3f& up, float angle)
+{
+    this->center = center;
+    this->direction = direction;
+    this->up = up;
+    Vec3f::Cross3(this->hor, this->direction, this->up);
+    this->direction.Normalize();
+    this->up.Normalize();
+    this->hor.Normalize();
+    this->angle = angle;
+}
+```
+光线的构造主要是direction部分的问题，这里我需要把`[(-1/2, 1/2), (1/2, 1/2)]`的offset映射到`[(-tanθ/2,-tanθ/2), (tanθ/2, tanθ/2)]`，这个hardcode一下即可，这里我最开始把x，y轴方向弄反了，导致图形出现了y=x轴对称的情况，然而前几个样例都是球，所以没发现，知道后面样例出现平面才发现这个问题
+```c++
+virtual Ray generateRay(Vec2f point)
+{
+    Vec3f temp = direction + 2 * tan(angle / 2) * up * point.y() + 2 * tan(angle / 2) * hor * point.x();
+    return Ray(center, temp);
+}
+```
+#### Plane
+Plane类需要记录normal和constant两个类型的值，这样可以唯一确定一个平面，根据这两个信息可以唯一确定一个平面
+```c++
+bool intersect(const Ray& r, Hit& h, float tmin)
+{
+    if (normal.Dot3(r.getDirection()) == 0) // 这里判断线与面平行的特殊情况
+    {
+        if (normal.Dot3(r.getOrigin()) != d)
+            return false;
+        else 
+        {
+            Vec3f tmp = normal;
+            tmp.Normalize();
+            h.set(0, this->material, tmp, r);
+            return true;
+        }
+
+    }
+    //通过点乘计算距离，判断t>=tmin
+    Vec3f tmp = normal;
+    tmp.Normalize();
+    float t = (d - r.getOrigin().Dot3(normal)) / r.getDirection().Dot3(normal);
+    h.set(t, this->material, tmp, r);
+    return tmin <= t;
+}
+```
+#### Triangle
+Triangle类判断比较复杂，我是根据三条边a,b,c上的点满足
+$P = R_0 + R_d \cdot t = \alpha \cdot a + \beta \cdot b + \gamma \cdot c$&emsp;$(\alpha + \beta + \gamma = 1)$, 
+然后根据矩阵运算确定这些的值包括t,这些是从PPT上搬过来hardcode的，具体原理没什么了解
+```c++
+bool intersect(const Ray& r, Hit& h, float tmin)
+{
+    Vec3f direction = r.getDirection(), origin = r.getOrigin();
+    float A = det3x3(
+        a.x() - b.x(), a.x() - c.x(), direction.x(),
+        a.y() - b.y(), a.y() - c.y(), direction.y(),
+        a.z() - b.z(), a.z() - c.z(), direction.z()
+    );
+    if (A == 0)
+        return false;
+    float beta = det3x3(
+        a.x() - origin.x(), a.x() - c.x(), direction.x(),
+        a.y() - origin.y(), a.y() - c.y(), direction.y(),
+        a.z() - origin.z(), a.z() - c.z(), direction.z()
+    ) / A;
+
+    float gama = det3x3(
+        a.x() - b.x(), a.x() - origin.x(), direction.x(),
+        a.y() - b.y(), a.y() - origin.y(), direction.y(),
+        a.z() - b.z(), a.z() - origin.z(), direction.z()
+    ) / A;
+
+    float t = det3x3(
+        a.x() - b.x(), a.x() - c.x(), a.x() - origin.x(),
+        a.y() - b.y(), a.y() - c.y(), a.y() - origin.y(),
+        a.z() - b.z(), a.z() - c.z(), a.z() - origin.z()
+    ) / A;
+    bool res = false;
+    if (beta >= 0 && gama >= 0 && beta + gama <= 1 && t >= tmin)
+    {
+        res = true;
+    }
+    if (res)
+    {
+        h.set(t, this->material, this->normal, r);
+    }
+    return res;
+}
+```
+####结果展示
+##### Case 1&2
+这个样例是最简单的Diffuse Shading, 这两张分别是ambient light(0, 0, 0)和(0.5, 0.5, 0.5)
+![](pic/assignment2_1.png) ![](pic/assignment2_2.png)
+##### Case 3
+这个样例有多个光线，并且有normal输出模式(图右)
+![](pic/assignment2_3.png) ![](pic/assignment2_4.png)
+##### Case 4
+这个样例包括了shade_back选项，可以看到camera在球的里面却能看到效果
+以下分别是output, depth 和 normal
+![](pic/assignment2_5.png) ![](pic/assignment2_6.png)![](pic/assignment2_7.png)
+##### Case 5
+这个样例包含Plane
+![](pic/assignment2_8.png)
+##### Case 6
+这个样例包含最基础的Triangle, 右图是没有shade_back参数的
+![](pic/assignment2_9.png)![](pic/assignment2_10.png)
+##### Case 7
+这个样例是通过多个Triangle组成立体图形，包括cube, rabbit
+![](pic/assignment2_11.png)![](pic/assignment2_12.png)![](pic/assignment2_13.png)
+##### Case 8
+最后是一个测试Transform以及t是否正确变换的样例，由于我传入的direction在变换后没有经过normalize，所以在Sphere的Intersect函数中需要改进代码，具体就是把`a = 1`变成`a = direction.dot3(direction)`,这样就能计算出t且这个t在外部不需要改变
+![](pic/assignment2_14.png)

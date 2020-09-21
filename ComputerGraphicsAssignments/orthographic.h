@@ -1,6 +1,7 @@
 #pragma once
 #include "vectors.h"
 #include "camera.h"
+#include "ray.h"
 class OrthographicCamera : public Camera
 {
 	Vec3f center;

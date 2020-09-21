@@ -20,7 +20,7 @@ public:
 		Vec3f source = r.getOrigin();
 		source -= center;
 		//cout << source << endl;
-		float a = 1;
+		float a = r.getDirection().Dot3(r.getDirection());
 		float b = r.getDirection().Dot3(source) * 2;
 		float c = source.Dot3(source) - radius * radius;
 		//cout << a  << " " << b << " " << c << " " << endl;
@@ -31,16 +31,22 @@ public:
 			return false;
 		}
 			
-		float t1 = (-b - (float)sqrt(d2)) / 2;
-		float t2 = (-b - (float)sqrt(d2)) / 2;
+		float t1 = (-b - (float)sqrt(d2)) / (2*a);
+		float t2 = (-b + (float)sqrt(d2)) / (2*a);
 		if (tmin < t1)
 		{
-			h.set(t1, this->material, r);
+			Vec3f hit_point = r.pointAtParameter(t1);
+			Vec3f normal = hit_point - center;
+			normal.Normalize();
+			h.set(t1, this->material, normal, r);
 			return true;
 		}
 		else if (tmin <= t2)
 		{
-			h.set(t2, this->material, r);
+			Vec3f hit_point = r.pointAtParameter(t2);
+			Vec3f normal = hit_point - center;
+			normal.Normalize();
+			h.set(t2, this->material, normal, r);
 			return true;
 		}
 		return false; 

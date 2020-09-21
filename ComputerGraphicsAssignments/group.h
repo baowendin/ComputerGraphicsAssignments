@@ -28,7 +28,7 @@ public:
 			{
 				if (!mark || hit.getT() < h.getT())
 				{									
-					h = hit;			
+					h = hit;
 				}
 				mark = true;			
 			}

@@ -3,12 +3,29 @@
 
 #include "vectors.h"
 #include <assert.h>
+#include "matrix.h"
+#include "camera.h" 
+#include "light.h"
 #include "material.h"
 #include "object3d.h"
-#include "group.h"
+#include "group.h" 
 #include "sphere.h"
-
+#include "plane.h"
+#include "triangle.h"
+#include "transform.h"
+#include <stdio.h>
+#include <string.h>
+#include "perspective.h"
+#include "orthographic.h"
 class Camera;
+class Light;
+class Material;
+class Object3D;
+class Group;
+class Sphere;
+class Plane;
+class Triangle;
+class Transform;
 
 #define MAX_PARSER_TOKEN_LENGTH 100
 
@@ -26,6 +43,12 @@ public:
     // ACCESSORS
     Camera* getCamera() const { return camera; }
     Vec3f getBackgroundColor() const { return background_color; }
+    Vec3f getAmbientLight() const { return ambient_light; }
+    int getNumLights() const { return num_lights; }
+    Light* getLight(int i) const {
+        assert(i >= 0 && i < num_lights);
+        return lights[i];
+    }
     int getNumMaterials() const { return num_materials; }
     Material* getMaterial(int i) const {
         assert(i >= 0 && i < num_materials);
@@ -40,13 +63,20 @@ private:
     // PARSING
     void parseFile();
     void parseOrthographicCamera();
+    void parsePerspectiveCamera();
     void parseBackground();
+    void parseLights();
+    Light* parseDirectionalLight();
     void parseMaterials();
     Material* parseMaterial();
 
     Object3D* parseObject(char token[MAX_PARSER_TOKEN_LENGTH]);
     Group* parseGroup();
     Sphere* parseSphere();
+    Plane* parsePlane();
+    Triangle* parseTriangle();
+    Group* parseTriangleMesh();
+    Transform* parseTransform();
 
     // HELPER FUNCTIONS
     int getToken(char token[MAX_PARSER_TOKEN_LENGTH]);
@@ -60,6 +90,9 @@ private:
     FILE* file;
     Camera* camera;
     Vec3f background_color;
+    Vec3f ambient_light;
+    int num_lights;
+    Light** lights;
     int num_materials;
     Material** materials;
     Material* current_material;
