@@ -69,6 +69,12 @@
     <ClInclude Include="perspective.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="glCanvas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rayTrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="scene_parser.cpp">
@@ -86,5 +92,17 @@
     <ClCompile Include="image.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="glCanvas.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rayTrace.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="light.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

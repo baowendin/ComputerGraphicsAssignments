@@ -121,7 +121,8 @@ Vec3f get_diffuse_color(SceneParser& parser, Hit& hit, bool shade_back)
 	{
 		Light* light = parser.getLight(k);
 		Vec3f p, dir, col;
-		light->getIllumination(p, dir, col);
+		float tmp = 1.0;
+		light->getIllumination(p, dir, col, tmp);
 		if (shade_back)
 			light_sum = light_sum + abs(dir.Dot3(hit.getNormal())) * col;
 		else

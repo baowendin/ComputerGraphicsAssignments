@@ -35,5 +35,9 @@ public:
 		}
 		return mark;
 	}
+	
+	void paint()
+	{
 
+	}
 };
