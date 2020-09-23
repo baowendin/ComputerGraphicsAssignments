@@ -5,6 +5,7 @@
 #include <GL\glu.h>   //GLu32 Header
 #include "vectors.h"
 #include "hit.h"
+#include <math.h>
 #include "glCanvas.h"
 #ifdef SPECULAR_FIX
 // OPTIONAL:  global variable allows (hacky) communication 
@@ -53,10 +54,30 @@ public:
 	}
 
     Vec3f getSpecularColor() const { return diffuseColor; }
-
+    // In Blinn-Torrance' s Phong Model
+    // L0 = Ambient + Diffuse + Speclture
+    // And we put Ambient out of this function  
     virtual Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const
     {
-        return Vec3f(0, 0, 0);
+        // ray's direction should be normalize since it maybe transform, and it does matter
+        Vec3f light_dir = dirToLight;
+        light_dir.Normalize();
+        Vec3f ray_dir = ray.getDirection();
+        ray_dir.Normalize();
+        //Diffuse Part
+        if (hit.getNormal().Dot3(ray.getDirection()) == 0 && !shade_back)
+            return Vec3f(0, 0, 0);
+        Vec3f diffuse = this->getDiffuseColor() * max(hit.getNormal().Dot3(ray.getDirection()), 0);
+        //Specular Part
+        //In Blinn-Torrance' s solution, L = (l + v).normalize() dot hit.normal
+        //But in our input the ray is from camera to object
+        //So l - v is correct
+        Vec3f beta = light_dir - ray_dir;
+        beta.Normalize();
+        Vec3f specular = this->getSpecularColor() * pow(max(beta.Dot3(hit.getNormal()), 0), exponent);
+        //return part
+        return (specular + diffuse) * lightColor;
+
     }
 
     void glSetMaterial(void) const {

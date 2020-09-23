@@ -1,27 +1,25 @@
 #include "rayTrace.h"
-void trace()
-{
-
-}
+// we set them as global parameter so they can be accessed by trace()
+char* input_file = NULL;
+int width = 100;
+int height = 100;
+char* output_file = NULL;
+float depth_min = 0;
+float depth_max = 1;
+char* depth_file = NULL;
+char* normal_file = NULL;
+bool shade_back = false, gui_used = false, gouraud_used = false;
+float theta, phi;
+void shade();
 void ray_trace(int argc, char** argv)
 {
-// ========================================================
-// ========================================================
-// Some sample code you might like to use for parsing 
-// command line arguments 
+	// ========================================================
+	// ========================================================
+	// Some sample code you might like to use for parsing 
+	// command line arguments 
 
-	char* input_file = NULL;
-	int width = 100;
-	int height = 100;
-	char* output_file = NULL;
-	float depth_min = 0;
-	float depth_max = 1;
-	char* depth_file = NULL;
-	char* normal_file = NULL;
-	bool shade_back = false, gui_used = false, gouraud_used = false;
-	float theta, phi;
-	// sample command line:
-	// raytracer -input scene1_1.txt -size 200 200 -output output1_1.tga -depth 9 10 depth1_1.tga
+		// sample command line:
+		// raytracer -input scene1_1.txt -size 200 200 -output output1_1.tga -depth 9 10 depth1_1.tga
 
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-input")) {
@@ -77,10 +75,50 @@ void ray_trace(int argc, char** argv)
 	if (gui_used)
 	{
 		GLCanvas glcanvas;
-		glcanvas.initialize(&parser, trace);
+		glcanvas.initialize(&parser, shade);
 	}
 	else
 	{
 		//OTHER PART, NOT THINK ABOUT IT YET
 	}
+}
+
+void shade()
+{
+	Image out_image(width, height);
+	SceneParser parser(input_file);
+	Camera* camera = parser.getCamera();
+	Group* group = parser.getGroup();
+	float tmin = camera->getTMin();
+	for (int i = 0; i < out_image.Width(); i++)
+	{
+		for (int j = 0; j < out_image.Height(); j++)
+		{
+			float x_bias = (i - out_image.Width() * 1.0 / 2) / out_image.Width();
+			float y_bias = (j - out_image.Height() * 1.0 / 2) / out_image.Height();
+			Ray ray = camera->generateRay(Vec2f(x_bias, y_bias));
+			Hit hit;
+			if (group->intersect(ray, hit, tmin))
+			{
+				//diffuse_file(new out_file)		
+				Vec3f phong_color = hit.getMaterial()->getDiffuseColor() * parser.getAmbientLight();
+				for (int k = 0; k < parser.getNumLights(); k++)
+				{
+					Light* light = parser.getLight(k);
+					Vec3f p, dir, col;
+					float tmp = 1.0;
+					light->getIllumination(p, dir, col, tmp);
+					phong_color += hit.getMaterial()->Shade(ray, hit, dir, col);
+				}
+				out_image.SetPixel(i, j, phong_color);
+			}
+			else
+			{
+				out_image.SetPixel(i, j, parser.getBackgroundColor());
+			}
+
+		}
+	}
+	if (output_file)
+		out_image.SaveTGA(output_file);
 }

@@ -38,6 +38,7 @@ public:
 	
 	void paint()
 	{
-
+		for (auto& object : object_group)
+			object->paint();
 	}
 };

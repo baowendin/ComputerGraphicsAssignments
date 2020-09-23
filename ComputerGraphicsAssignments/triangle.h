@@ -52,6 +52,15 @@ public:
 			h.set(t, this->material, this->normal, r);
 		}
 		return res;
-		
+	}
+
+	void paint()
+	{
+		glBegin(GL_TRIANGLES);
+		glVertex3f(a.x(), a.y(), a.z());
+		glVertex3f(b.x(), b.y(), b.z());
+		glVertex3f(c.x(), c.y(), c.z());
+		glNormal3f(normal.x(), normal.y(), normal.z());
+		glEnd();
 	}
 };

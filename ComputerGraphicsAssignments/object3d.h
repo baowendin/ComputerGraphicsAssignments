@@ -24,6 +24,7 @@ public:
 	{
 		delete material;
 	}
+	virtual void paint() = 0;
 
 };
 #endif // !_OBJECT3D_H
