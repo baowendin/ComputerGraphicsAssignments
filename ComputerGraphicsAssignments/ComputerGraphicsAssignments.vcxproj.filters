@@ -101,6 +101,9 @@
     <ClCompile Include="light.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="sphere.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -40,4 +40,14 @@ public:
 			return false;
 	}
 
+	void paint()
+	{
+		glPushMatrix();
+		GLfloat* glMatrix = m.glGet();
+		glMultMatrixf(glMatrix);
+		delete[] glMatrix;
+		o->paint();
+		glPopMatrix();
+
+	}
 };

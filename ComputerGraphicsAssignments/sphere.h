@@ -1,6 +1,8 @@
 #pragma once
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "object3d.h"
-
+#include "rayTrace.h"
 class Sphere : public Object3D
 {
 	Vec3f center;
@@ -30,9 +32,9 @@ public:
 			//cout << "fuck";
 			return false;
 		}
-			
-		float t1 = (-b - (float)sqrt(d2)) / (2*a);
-		float t2 = (-b + (float)sqrt(d2)) / (2*a);
+
+		float t1 = (-b - (float)sqrt(d2)) / (2 * a);
+		float t2 = (-b + (float)sqrt(d2)) / (2 * a);
 		if (tmin < t1)
 		{
 			Vec3f hit_point = r.pointAtParameter(t1);
@@ -49,7 +51,7 @@ public:
 			h.set(t2, this->material, normal, r);
 			return true;
 		}
-		return false; 
+		return false;
 
 
 
@@ -75,4 +77,6 @@ public:
 		}
 		return false;*/
 	}
+
+	void paint();
 };

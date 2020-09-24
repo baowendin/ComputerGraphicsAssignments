@@ -409,3 +409,197 @@ bool intersect(const Ray& r, Hit& h, float tmin)
 ##### Case 8
 最后是一个测试Transform以及t是否正确变换的样例，由于我传入的direction在变换后没有经过normalize，所以在Sphere的Intersect函数中需要改进代码，具体就是把`a = 1`变成`a = direction.dot3(direction)`,这样就能计算出t且这个t在外部不需要改变
 ![](pic/assignment2_14.png)
+###Assignment3
+这个实验主要是添加了Phong Model的Shader，通过对Diffuse, Specular和Ambient三个方面的反射光分量，使Shader更加真实，并且将OpenGL库加入工程，通过OpenGL快速渲染模型，并且实现可互动。这个作业虽然很多和OpenGL的代码在网站中都有给出，但是由于我需要通过阅读和查阅理解这部分内容。并且在Paint()函数中，对于Sphere类型的编写和Debug都比较困难，所以实际上花了比预期更多的时间
+####代码分析
+#####GlCanvas类
+首先增加`GlCanvas`类，这个类用于调用OpenGl库函数实现视角（相机）的移动，包括旋转，平移，缩放。由于这部分代码是作业提供的，并且提供的缩放功能存在问题。因此不贴出来了
+#####PhongMaterial类
+`PhongMaterial`类继承自`Material`类，它增加了两个成员函数，一个是为GlCanvas提供Material颜色的`void glSetMaterial(void)`, 它主要是调用库函数设置了Phong Model的一些参数
+然后是我们为camera提供的Phong Model Shader, 我们通过成员变量，计算pixel的颜色
+```c++
+virtual Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const
+{
+    // ray's direction should be normalize since it maybe transform, and it does matter
+    Vec3f light_dir = dirToLight;
+    light_dir.Normalize();
+    Vec3f ray_dir = ray.getDirection();
+    ray_dir.Normalize();
+    //Diffuse Part
+    Vec3f diffuse = this->getDiffuseColor() * max(hit.getNormal().Dot3(light_dir), 0);
+    //Specular Part
+    //In Blinn-Torrance' s solution, L = (l + v).normalize() dot hit.normal
+    //But in our input the ray is from camera to object
+    //So l - v is correct
+    Vec3f beta = light_dir - ray_dir;
+    beta.Normalize();
+    Vec3f specular = this->getSpecularColor() * pow(max(beta.Dot3(hit.getNormal()), 0), exponent);
+    //return part
+    return (specular + diffuse) * lightColor;
+}
+```
+#####Object3D::Paint()
+`Paint()`虚函数主要是调用OpenGl的相关函数，在Pre-Visualizer里绘制对应的图形
+对于`Group`类，因为它实际上就是个容器，所以我们只需要recursively调用容器内每个元素的`Paint()`即可
+```c++
+void paint()
+{
+    for (auto& object : object_group)
+        object->paint();
+}
+```
+对于`Triangle`类比较简单，我们提供三个顶点的坐标即可
+```c++
+void paint()
+{
+    this->material->glSetMaterial(); //设置Material
+    glBegin(GL_TRIANGLES); //绘制三角形
+    glNormal3f(normal.x(), normal.y(), normal.z()); //提供法线
+    //三个vertex坐标
+    glVertex3f(a.x(), a.y(), a.z());
+    glVertex3f(b.x(), b.y(), b.z());
+    glVertex3f(c.x(), c.y(), c.z());
+    glEnd();
+}
+```
+对于`Plane`类，由于OpenGL没有提供这个primitive，所以我们选择绘制非常大的长方形，它的大小远大于窗口大小，用这张方式模拟平面
+```c++
+void paint()
+{
+    //首先我们需要通过Normal找到一条平行于平面的向量
+    //所以我们随便找一个不和normal平行的向量进行叉乘即可，得到的记为b1
+    //然后再用向量和b1
+    Vec3f tmp = normal == Vec3f(1, 0, 0) ? Vec3f(0, 1, 0) : Vec3f(1, 0, 0);
+    Vec3f b1, b2;
+    Vec3f::Cross3(b1, normal, tmp);
+    Vec3f::Cross3(b2, b1, normal);
+    Vec3f center;
+    //然后我们根据P dot N = d, 设定平面的中心
+    if (normal.x() != 0)
+        center = Vec3f(d / normal.x(), 0, 0);
+    else if (normal.y() != 0)
+        center = Vec3f(0, d / normal.y(), 0);
+    else if (normal.z() != 0)
+        center = Vec3f(0, 0, d / normal.z());
+    else
+    {
+        cout << "The normal is wrongly set to (0, 0, 0)";
+        assert(0);
+    }
+    //然后以INF上下左右延伸，获得4个vertex
+    Vec3f a = center - INF * b1 - INF * b2;
+    Vec3f b = center - INF * b1 + INF * b2;
+    Vec3f c = center + INF * b1 + INF * b2;
+    Vec3f d = center + INF * b1 - INF * b2;
+    //调用函数绘制图形
+    this->material->glSetMaterial();
+    glBegin(GL_QUADS);
+    glNormal3f(normal.x(), normal.y(), normal.z());
+    glVertex3f(a.x(), a.y(), a.z());
+    glVertex3f(b.x(), b.y(), b.z());
+    glVertex3f(c.x(), c.y(), c.z());
+    glVertex3f(d.x(), d.y(), d.z());
+    glEnd();
+}
+```
+`Sphere::Paint()`比较复杂，我们需要通过绘制多边形进行模拟,我将在注释中进行详细的说明
+```c++
+void Sphere::paint()
+{
+    material->glSetMaterial();
+    vector<Vec3f> points;
+    // 记录单位theta、phi的步长
+    float unit_theta = M_PI * 2 / theta_num, unit_phi = M_PI / phi_num;
+    // 生成phi_num * theta_num个点，放入容器中
+    for (int phi = 0; phi < phi_num + 1; phi++)
+        for (int theta = 0; theta < theta_num; theta++)
+        {
+            float phi_val = -M_PI_2 + unit_phi * phi;
+            float theta_val = unit_theta * theta;
+            points.push_back(
+                Vec3f(radius * cos(phi_val) * sin(theta_val),
+                    radius * cos(phi_val) * cos(theta_val),
+                    radius * sin(phi_val)
+                ) + center);
+        }
+    // 层序遍历用这些点画四边形
+  
+    int count = 0;
+    glBegin(GL_QUADS);
+    for (int phi = 0; phi < phi_num; phi++)
+    {
+        Vec3f p[4];
+        for (int theta = 0; theta < theta_num; theta++)
+        {
+            p[0] = points[phi * theta_num + theta];
+            p[1] = points[phi * theta_num + (theta + 1) % theta_num];
+            p[2] = points[(phi + 1) * theta_num + (theta + 1) % theta_num];
+            p[3] = points[(phi + 1) * theta_num + theta];
+            Vec3f normal;
+            // 通过叉乘获得normal
+            // 注意由于在phi = -PI / 2 和 PI / 2时候有2个点重合，所以实际为三角形
+            // 由于float的精度问题，所以直接计算normal可能会出错
+            // 这时候我们需要特殊判断，正确处理法线的方向计算
+            if (phi == phi_num - 1)
+            {
+                Vec3f::Cross3(normal, p[3] - p[0], p[1] - p[3]);
+            }
+            else
+            {
+                Vec3f::Cross3(normal, p[3] - p[0], p[2] - p[3]);
+            }
+            normal.Normalize();
+            // 然后绘制四边形，在gouraud flag标记为true的时候，我们使用gouraud插值法
+            // 为每个点设置不同的normal
+            for (int i = 0; i < 4; i++)
+            {
+                if (gouraud_used)
+                {
+                    normal = p[i] - center;
+                    normal.Normalize();
+                }
+                glNormal3f(normal.x(), normal.y(), normal.z());
+                glVertex3f(p[i].x(), p[i].y(), p[i].z());
+            }
+            count++;
+        }
+        
+    }
+    glEnd();
+}
+```
+对于`Transform::Paint()`比较简单，是通过入栈和出栈来存储变换矩阵，然后对他的child调用`Paint()`
+```c++
+void paint()
+{
+	glPushMatrix();
+	GLfloat* glMatrix = m.glGet();
+	glMultMatrixf(glMatrix);
+	delete[] glMatrix;
+	o->paint();
+	glPopMatrix();
+}
+```
+####结果展示
+Cube和Rabbit本质上都是用Triangle模拟的，为了对比OpenGL和我们生成的tga文件验证Phong Model是否正确
+#####Cube
+正交相机
+![](pic/assignment3_1_open.png)![](pic/assignment3_1_pic.png)
+透视相机
+![](pic/assignment3_2_open.png)![](pic/assignment3_2_pic.png)
+#####Rabbit
+![](pic/assignment3_3_open.png)![](pic/assignment3_3_pic.png)
+#####Transform
+这个是测试OpenGL的Transform类是否正确，对比图片我们可以发现成功实现
+![](pic/assignment3_4_open.png)![](pic/assignment3_4_pic.png)
+#####Sphere
+这个我认为是作业里最难的一部分，我查找Bug花费了很长时间，并且我最终我的成果与Assignment预期结果不同。
+我通过对比样例图片，发现了camera视角是(0, 0, -1)，而我用的是左手系，所以看到球的顶部，是由数个三角形拼接而成，而样例使用的是右手系，看到是球的正面，所以更为平滑。
+但是由于Assignment中并没有明确要求我用右手系，所以我认为我的结果也是可行的
+
+以下是没有进行插值的结果:
+![](pic/assignment3_5_open.png)![](pic/assignment3_6_open.png)
+进行插值以后，可以看到还是达到了预期效果:
+![](pic/assignment3_7.png)
+最后是调整镜面反射exponent参数的效果,由于没有进行specular fix，所以OpenGL的效果会差一点
+![](pic/assignment3_8_open.png)![](pic/assignment3_8_pic.png)

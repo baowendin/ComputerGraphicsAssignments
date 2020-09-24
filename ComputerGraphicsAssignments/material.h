@@ -3,6 +3,7 @@
 #include <windows.h>  //Windows Header
 #include <GL\gl.h>   //OpenGL Header
 #include <GL\glu.h>   //GLu32 Header
+#include <GL/glut.h>
 #include "vectors.h"
 #include "hit.h"
 #include <math.h>
@@ -53,7 +54,7 @@ public:
         this->specularColor = specularColor;
 	}
 
-    Vec3f getSpecularColor() const { return diffuseColor; }
+    Vec3f getSpecularColor() const { return specularColor; }
     // In Blinn-Torrance' s Phong Model
     // L0 = Ambient + Diffuse + Speclture
     // And we put Ambient out of this function  
@@ -65,9 +66,7 @@ public:
         Vec3f ray_dir = ray.getDirection();
         ray_dir.Normalize();
         //Diffuse Part
-        if (hit.getNormal().Dot3(ray.getDirection()) == 0 && !shade_back)
-            return Vec3f(0, 0, 0);
-        Vec3f diffuse = this->getDiffuseColor() * max(hit.getNormal().Dot3(ray.getDirection()), 0);
+        Vec3f diffuse = this->getDiffuseColor() * max(hit.getNormal().Dot3(light_dir), 0);
         //Specular Part
         //In Blinn-Torrance' s solution, L = (l + v).normalize() dot hit.normal
         //But in our input the ray is from camera to object
@@ -77,7 +76,6 @@ public:
         Vec3f specular = this->getSpecularColor() * pow(max(beta.Dot3(hit.getNormal()), 0), exponent);
         //return part
         return (specular + diffuse) * lightColor;
-
     }
 
     void glSetMaterial(void) const {

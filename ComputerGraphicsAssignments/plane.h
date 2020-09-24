@@ -59,6 +59,7 @@ public:
 		Vec3f b = center - INF * b1 + INF * b2;
 		Vec3f c = center + INF * b1 + INF * b2;
 		Vec3f d = center + INF * b1 - INF * b2;
+		this->material->glSetMaterial();
 		glBegin(GL_QUADS);
 		glNormal3f(normal.x(), normal.y(), normal.z());
 		glVertex3f(a.x(), a.y(), a.z());
@@ -66,7 +67,5 @@ public:
 		glVertex3f(c.x(), c.y(), c.z());
 		glVertex3f(d.x(), d.y(), d.z());
 		glEnd();
-
-
 	}
 };

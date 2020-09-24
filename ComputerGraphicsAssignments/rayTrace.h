@@ -11,4 +11,6 @@
 #include<iostream>
 #include<string.h>
 #include<assert.h>
+extern bool shade_back, gui_used, gouraud_used;
+extern int theta_num, phi_num;
 void ray_trace(int argc, char** argv);

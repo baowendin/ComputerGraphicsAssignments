@@ -1,4 +1,4 @@
-// ====================================================================
+    // ====================================================================
 // GLCanvas class by Rob Jagnow.
 //
 // The GLCanvas can be created with a call to the 'initialize' routine,

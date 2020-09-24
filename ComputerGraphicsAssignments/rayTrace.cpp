@@ -1,4 +1,4 @@
-#include "rayTrace.h"
+	#include "rayTrace.h"
 // we set them as global parameter so they can be accessed by trace()
 char* input_file = NULL;
 int width = 100;
@@ -9,7 +9,7 @@ float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
 bool shade_back = false, gui_used = false, gouraud_used = false;
-float theta, phi;
+int theta_num = 20, phi_num = 10;
 void shade();
 void ray_trace(int argc, char** argv)
 {
@@ -57,9 +57,9 @@ void ray_trace(int argc, char** argv)
 		}
 		else if (!strcmp(argv[i], "-tessellation")) {
 			i++; assert(i < argc);
-			theta = atof(argv[i]);
+			theta_num = (int)atof(argv[i]);
 			i++; assert(i < argc);
-			phi = atof(argv[i]);
+			phi_num = (int)atof(argv[i]);
 
 		}
 		else if (!strcmp(argv[i], "-gouraud")) {
@@ -102,16 +102,19 @@ void shade()
 			{
 				//diffuse_file(new out_file)		
 				Vec3f phong_color = hit.getMaterial()->getDiffuseColor() * parser.getAmbientLight();
+				
 				for (int k = 0; k < parser.getNumLights(); k++)
 				{
 					Light* light = parser.getLight(k);
 					Vec3f p, dir, col;
 					float tmp = 1.0;
-					light->getIllumination(p, dir, col, tmp);
+					light->getIllumination(p, dir, col, tmp);	
+					//cout << hit.getMaterial()->Shade(ray, hit, dir, col) << endl;
 					phong_color += hit.getMaterial()->Shade(ray, hit, dir, col);
 				}
+				//cout << phong_color << endl;
 				out_image.SetPixel(i, j, phong_color);
-			}
+			} 
 			else
 			{
 				out_image.SetPixel(i, j, parser.getBackgroundColor());
