@@ -75,6 +75,9 @@
     <ClInclude Include="rayTrace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rayTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="scene_parser.cpp">
@@ -102,6 +105,9 @@
       <Filter>Resource Files</Filter>
     </ClCompile>
     <ClCompile Include="sphere.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rayTree.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>

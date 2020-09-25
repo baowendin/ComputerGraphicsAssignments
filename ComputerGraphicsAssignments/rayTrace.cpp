@@ -1,4 +1,4 @@
-	#include "rayTrace.h"
+#include "rayTrace.h"
 // we set them as global parameter so they can be accessed by trace()
 char* input_file = NULL;
 int width = 100;
@@ -9,8 +9,12 @@ float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
 bool shade_back = false, gui_used = false, gouraud_used = false;
+bool shadows = false;
+int max_bounces = 1, cutoff_weight;
 int theta_num = 20, phi_num = 10;
+SceneParser* parser;
 void shade();
+void trace(float x, float y);
 void ray_trace(int argc, char** argv)
 {
 	// ========================================================
@@ -65,31 +69,41 @@ void ray_trace(int argc, char** argv)
 		else if (!strcmp(argv[i], "-gouraud")) {
 			gouraud_used = true;
 		}
+		else if (!strcmp(argv[i], "-shadows")) {
+			shadows = true;
+		}
+		else if (!strcmp(argv[i], "-bounces")) {
+			i++; assert(i < argc);
+			max_bounces = (int)atof(argv[i]);
+		}
+		else if (!strcmp(argv[i], "-weight")) {
+			i++; assert(i < argc);
+			cutoff_weight = atof(argv[i]);
+		}
 		else {
 			printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
 			assert(0);
 		}
 	}
-	SceneParser parser(input_file);
+	parser = new SceneParser(input_file);
 	//Main Code Part
 	if (gui_used)
 	{
 		GLCanvas glcanvas;
-		glcanvas.initialize(&parser, shade);
+		glcanvas.initialize(parser, shade, trace);
 	}
 	else
 	{
-		//OTHER PART, NOT THINK ABOUT IT YET
+		shade();
 	}
 }
 
 void shade()
 {
 	Image out_image(width, height);
-	SceneParser parser(input_file);
-	Camera* camera = parser.getCamera();
-	Group* group = parser.getGroup();
+	Camera* camera = parser->getCamera();
 	float tmin = camera->getTMin();
+	RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
 	for (int i = 0; i < out_image.Width(); i++)
 	{
 		for (int j = 0; j < out_image.Height(); j++)
@@ -98,30 +112,22 @@ void shade()
 			float y_bias = (j - out_image.Height() * 1.0 / 2) / out_image.Height();
 			Ray ray = camera->generateRay(Vec2f(x_bias, y_bias));
 			Hit hit;
-			if (group->intersect(ray, hit, tmin))
-			{
-				//diffuse_file(new out_file)		
-				Vec3f phong_color = hit.getMaterial()->getDiffuseColor() * parser.getAmbientLight();
-				
-				for (int k = 0; k < parser.getNumLights(); k++)
-				{
-					Light* light = parser.getLight(k);
-					Vec3f p, dir, col;
-					float tmp = 1.0;
-					light->getIllumination(p, dir, col, tmp);	
-					//cout << hit.getMaterial()->Shade(ray, hit, dir, col) << endl;
-					phong_color += hit.getMaterial()->Shade(ray, hit, dir, col);
-				}
-				//cout << phong_color << endl;
-				out_image.SetPixel(i, j, phong_color);
-			} 
-			else
-			{
-				out_image.SetPixel(i, j, parser.getBackgroundColor());
-			}
-
+			Vec3f color = raytracer.traceRay(ray, tmin, 0, 0, 1, hit);
+			out_image.SetPixel(i, j, color);
 		}
+
 	}
 	if (output_file)
 		out_image.SaveTGA(output_file);
+}
+
+void trace(float x, float y)
+{
+	Camera* camera = parser->getCamera();
+	float tmin = camera->getTMin();
+	RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
+	Vec2f point(x - 0.5, y - 0.5);
+	Ray ray = camera->generateRay(point);
+	Hit hit_result;
+	Vec3f Color = raytracer.traceRay(ray, camera->getTMin(), 0, cutoff_weight, 0, hit_result);
 }

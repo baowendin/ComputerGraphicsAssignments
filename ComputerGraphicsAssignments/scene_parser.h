@@ -3,20 +3,7 @@
 
 #include "vectors.h"
 #include <assert.h>
-#include "matrix.h"
-#include "camera.h" 
-#include "light.h"
-#include "material.h"
-#include "object3d.h"
-#include "group.h" 
-#include "sphere.h"
-#include "plane.h"
-#include "triangle.h"
-#include "transform.h"
-#include <stdio.h>
-#include <string.h>
-#include "perspective.h"
-#include "orthographic.h"
+
 class Camera;
 class Light;
 class Material;
@@ -38,6 +25,7 @@ public:
 
     // CONSTRUCTOR & DESTRUCTOR
     SceneParser(const char* filename);
+    SceneParser() {} // don't use
     ~SceneParser();
 
     // ACCESSORS
@@ -58,7 +46,7 @@ public:
 
 private:
 
-    SceneParser() { assert(0); } // don't use
+
 
     // PARSING
     void parseFile();
@@ -67,6 +55,7 @@ private:
     void parseBackground();
     void parseLights();
     Light* parseDirectionalLight();
+    Light* parsePointLight();
     void parseMaterials();
     Material* parsePhongMaterial();
 
