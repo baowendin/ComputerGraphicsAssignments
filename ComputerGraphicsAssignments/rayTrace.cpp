@@ -131,3 +131,34 @@ void trace(float x, float y)
 	Hit hit_result;
 	Vec3f Color = raytracer.traceRay(ray, camera->getTMin(), 0, cutoff_weight, 0, hit_result);
 }
+
+Vec3f mirrorDirection(const Vec3f& normal, const Vec3f& incoming)
+{
+	Vec3f n = normal, v = incoming;
+	n.Normalize();
+	v.Normalize();
+	Vec3f mirror = v - 2 * n.Dot3(v) * n;
+	mirror.Normalize();
+	return	mirror;
+}
+
+bool transmittedDirection(const Vec3f& normal, const Vec3f& incoming,
+	float index_i, float index_t, Vec3f& transmitted)
+{
+	Vec3f n = normal, i = incoming;
+	n.Normalize();
+	i.Normalize();
+	float cos_theta = n.Dot3(i);	
+	Vec3f m = -cos_theta * n + i;
+	float in_sin = m.Length();
+	float out_sin = in_sin * index_i / index_t;
+	if (out_sin > 1)
+		return false;
+	float out_cos = sqrt(1 - out_sin * out_sin);
+	m.Normalize();
+	if (cos_theta < 0)
+		transmitted = -out_cos * n + out_sin * m;
+	else
+		transmitted = out_cos * n + out_sin * m;
+	return true;
+}

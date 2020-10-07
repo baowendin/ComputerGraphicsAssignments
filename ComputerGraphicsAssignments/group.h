@@ -1,6 +1,7 @@
 #pragma once
 #include "object3d.h"
 #include<vector>
+using namespace std;
 
 class Group : public Object3D
 {

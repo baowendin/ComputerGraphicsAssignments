@@ -110,6 +110,9 @@
     <ClCompile Include="rayTree.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="material.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

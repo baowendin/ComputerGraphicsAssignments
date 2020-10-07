@@ -1,3 +1,12 @@
+<center><font size = 6>
+作业报告
+</br>
+</font>
+<font size = 3>
+包文鼎
+</font>
+</center>
+
 ###Assignment0
 &emsp;&emsp;这个作业和图形学将要学习主要的知识关系不大，主要是让我们回顾向量、矩阵乘法等基础知识和图形库的使用。作业要求是通过迭代坐标变换生成IFS图形，并且为我们提供了比较详细的模板，我们只需要填鸭式的把内容补全。
 ####代码介绍
@@ -272,7 +281,7 @@ Vec3f get_diffuse_color(SceneParser& parser, Hit& hit, bool shade_back)
     for (int k = 0; k < parser.getNumLights(); k++)//对每个light进行计算
     {
         Light* light = parser.getLight(k);
-        Vec3f p, dir, col;
+        Vec3f p, dir, col
         light->getIllumination(p, dir, col);
         if (shade_back)//如果shade_back, 则需要用abs考虑dot结果是负数的情况，也就是光源照在表面的背面
             light_sum = light_sum + abs(dir.Dot3(hit.getNormal())) * col;
@@ -572,12 +581,12 @@ void Sphere::paint()
 ```c++
 void paint()
 {
-	glPushMatrix();
-	GLfloat* glMatrix = m.glGet();
-	glMultMatrixf(glMatrix);
-	delete[] glMatrix;
-	o->paint();
-	glPopMatrix();
+    glPushMatrix();
+    GLfloat* glMatrix = m.glGet();
+    glMultMatrixf(glMatrix);
+    delete[] glMatrix;
+    o->paint();
+    glPopMatrix();
 }
 ```
 ####结果展示
@@ -603,3 +612,182 @@ Cube和Rabbit本质上都是用Triangle模拟的，为了对比OpenGL和我们�
 ![](pic/assignment3_7.png)
 最后是调整镜面反射exponent参数的效果,由于没有进行specular fix，所以OpenGL的效果会差一点
 ![](pic/assignment3_8_open.png)![](pic/assignment3_8_pic.png)
+###Asssignment4
+这个作业主要是通过为之前的Shader增加阴影、反射、折射，使它变成一个传统意义上的RayTracer，并且通过扩展GLCamera的功能，使能够在Pre-Visualizer上观察射向某点光线的折射、反射路径，做到光路可视化，也能够更好的帮助编写代码时候的Debug
+####代码介绍
+从局部光照到全局光照其实改动比较简单，我们只需要在原本`group->intersect()`的基础上，判断从这个点到所有光源的射线，是否会遇到其他物体，通过这种方式判断这个光源的光照是否有效
+#####Shadows
+```c++
+for (int i = 0; i < parser->getNumLights(); i++)
+{
+    Light* light = parser->getLight(i);
+    Vec3f p, dir, col;
+    Vec3f flag(1, 1, 1);//用flag代表这个光线的光照是否有效
+    p = hit.getIntersectionPoint();
+    float dis;
+    light->getIllumination(p, dir, col, dis);
+    //如果全局光照的选项打开，则进行判断
+    if (shadows)
+    {
+        Hit light_hit;
+        Ray light_ray(p, dir); //做一条从交点到光源的射线
+        if (group->intersect(light_ray, light_hit, EPSILON)) //如果有交点
+        {
+            if (dis > light_hit.getT()) //交点在光源之前
+            {
+                flag = Vec3f(0, 0, 0); //标记无效
+                RayTree::AddShadowSegment(light_ray, 0, light_hit.getT()); //射线可视化
+            }
+            else //如果交点在光源之后，实际上并没有影响
+            {
+                RayTree::AddShadowSegment(light_ray, 0, dis);
+            }
+        }
+        else // 如果没交点，则该光线必定有效
+        {
+            RayTree::AddShadowSegment(light_ray, 0, dis);
+        }
+    }
+    // 累计每条光线的颜色
+    color += flag * hit.getMaterial()->Shade(ray, hit, dir, col);
+}
+```
+#####Reflection
+首先是通过入射光线和法线计算反射光线 
+```c++
+Vec3f mirrorDirection(const Vec3f& normal, const Vec3f& incoming)
+{
+    Vec3f n = normal, v = incoming;
+    n.Normalize();
+    v.Normalize();
+    Vec3f mirror = v - 2 * n.Dot3(v) * n;
+    mirror.Normalize();
+    return	mirror;
+}
+```
+然后如果Material的反射系数大于零，则考虑反射光线
+```c++
+if (hit.getMaterial()->getReflectiveColor().Length() > 0)
+{
+    Vec3f reflect = mirrorDirection(hit.getNormal(), ray.getDirection());//获得反射光线的方向
+    Ray reflect_ray = Ray(hit.getIntersectionPoint(), reflect);
+    Hit reflect_hit;
+    //递归的调用traceRay，对新的Ray进行计算
+    //这里的EPSILON设置为0.01，主要是避免因为浮点数的精度导致碰撞检测到自己的失误
+    color += traceRay(reflect_ray, EPSILON, bounces + 1, weight, indexOfRefraction, reflect_hit) 
+    * hit.getMaterial()->getReflectiveColor();
+    RayTree::AddReflectedSegment(reflect_ray, 0, reflect_hit.getT());//反射光线可视化
+}
+```
+#####Refration
+折射的处理比较麻烦，主要有两个难点，第一个是折射光线方向的计算比反射难，第二个是由于介质的折射率不同，需要考虑全反射现象。
+首先是折射光线方向计算
+```c++
+bool transmittedDirection(const Vec3f& normal, const Vec3f& incoming,
+    float index_i, float index_t, Vec3f& transmitted)
+{
+    //对入射方向和法线进行矢量化
+    Vec3f n = normal, i = incoming;
+    n.Normalize();
+    i.Normalize();
+    float cos_theta = n.Dot3(i);//入射光线和法线夹角的cos值 	
+    Vec3f m = -cos_theta * n + i;//入射光线在法线垂直方向的投影
+    float in_sin = m.Length();//入射夹角的sin值
+    float out_sin = in_sin * index_i / index_t;
+    //考虑全反射的特殊情况
+    if (out_sin > 1)
+        return false;
+    float out_cos = sqrt(1 - out_sin * out_sin);
+    m.Normalize();
+    //由于这儿out_cos没有考虑方向，所以需要
+    //从material中射出或者射入material中两种情况分别考虑
+    if (cos_theta < 0)
+        transmitted = -out_cos * n + out_sin * m;
+    else
+        transmitted = out_cos * n + out_sin * m;
+    return true;
+}
+```
+然后是`rayTracer`中的处理部分，如果material的TransparentColor不为0，则考虑折射   
+```c++
+if (hit.getMaterial()->getTransparentColor().Length() > 0)
+{
+    bool flag;
+    Vec3f transmitted;
+    float to_index;
+    //考虑两种情况，如果是从material中射出，则外面介质的折射率设置为1
+    //否则设置为material的折射率
+    if (ray.getDirection().Dot3(hit.getNormal()) < 0)
+        to_index = hit.getMaterial()->getIndexOfRefraction();
+    else
+        to_index = 1;
+    //通过flag标记是否全反射
+    flag = transmittedDirection(hit.getNormal(), ray.getDirection(), indexOfRefraction, to_index, transmitted);
+    //如果没有发生全反射，则递归的考虑折射光线的影响
+    if (flag)
+    {
+        Ray transmitted_ray(hit.getIntersectionPoint(), transmitted);
+        Hit transmitted_hit;
+        Vec3f tmp = traceRay(transmitted_ray, EPSILON, bounces + 1, weight, to_index, transmitted_hit) * hit.getMaterial()->getTransparentColor();//记录tmp主要是为了输出debug
+        color += tmp;
+        RayTree::AddTransmittedSegment(transmitted_ray, 0, transmitted_hit.getT());
+    }
+}
+```
+对于折射、反射次数上限的处理比较简单，判断bounces和max_bounces的大小即可
+```c++
+if (bounces > max_bounces)
+            return Vec3f(0, 0, 0);
+```
+#####Pre-Visualizer交互
+最后是在Pre-Visualizer中，按T实现该点的光线，我们是增加了如下的函数
+```c++
+void trace(float x, float y)
+{
+    Camera* camera = parser->getCamera();
+    float tmin = camera->getTMin();
+    //这里我们是手动生成了一条光线
+    RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
+    //由于我的camera的输入范围是[-0.5, -0.5]到[0.5, 0.5]，而输入是[0, 0]到[1, 1]
+    //所以需要手动转换
+    Vec2f point(x - 0.5, y - 0.5);
+    Ray ray = camera->generateRay(point);
+    Hit hit_result;
+    //进行traceRay函数，用他的功能进行可视化
+    //返回的Color并不被我们需要
+    Vec3f Color = raytracer.traceRay(ray, camera->getTMin(), 0, cutoff_weight, 0, hit_result);
+}
+```
+####结果展示
+#####Shadows
+可以看到由于全局的原因，Plane的阴影正确处理
+![](pic/assignment4_1.png)
+#####光线可视化
+由于这是个实心的球体，所以没折射和反射光，我们可以看到3个光源的射线，有2个被球体本身挡住，最后一个则没有被遮挡，因此这个像素呈现了颜色
+![](pic/assignment4_2.png)
+而对于下面的阴影部分，则是3个光源都被挡住
+![](pic/assignment4_2_2.png)
+#####Reflection
+这个样例的Plane支持反射，所以可以看到Plane的交点有一条反射光线射到红色柱子上
+![](pic/assignment4_3.png)
+因此我们生成的tga文件也有反射的效果
+![](pic/assignment4_3_2.png)
+#####Bounces
+这个样例是体现Bounces影响反射
+首先是bounces为0的情况，可以看到不允许反射，显示物体本身的颜色
+![](pic/assignment4_4_1.png)
+然后是bounces为1，2，3的情况，可以看到反射效果越来越好(仔细看还有一种递归的感觉)
+![](pic/assignment4_4_2.png)![](pic/assignment4_4_3.png)![](pic/assignment4_4_4.png)
+#####Point Light
+然后是对于新的类型，点光源,通过这个例子我们可以看到点光源是向四周放出光线，但是有direction的因素影响光照，这个在提供的代码里已经处理了，不需要我们在Shader里实现
+![](pic/assignment4_5.png)
+#####Reflaction
+折射的情况我们直接放最复杂的一种，即对于diamond的折射
+最开始的时候bounces设置为0，无法折射，这时候体现的就是光线的颜色
+![](pic/assignment4_6_1.png)
+然后随着bounces变大，钻石变得璀璨起来
+![](pic/assignment4_6_2.png)![](pic/assignment4_6_3.png)![](pic/assignment4_6_4.png)![](pic/assignment4_6_5.png)
+但是这里其实我和网站的sample有些区别，因为在rayTracer的参数中有一个设置为0.01的weight，是和光线的权重有关的，但是我不清楚这个weight具体该怎么使用，实际效果出来我的钻石会比他的稍微亮一点，因为相差不是很大所以就不纠结在这儿了
+###总结
+&emsp;&emsp;在两周内，我完成了MIT图形学Assignment0~4总共5个作业的内容。一开始我认为我能够在两周内完成整个作业，但是在实际写代码的时候，发现由于之前我并没有修读过图形学，因此对于理解PPT和Asignment中内容的理解花费了不少时间，我在看PPT和Assignment以外，还去查阅包括wiki和其他的很多资料，才将课程内容绝大部分都理解了。因此两周也只完成了一半的内容。接下来我的目标是在国庆期间将剩余的部分完成。
+&emsp;&emsp;但是在完成作业的途中，我也一步步从最开始的camera，到自己编写图形类，最后到raytracer和OpenGL库的使用，我一步一步实现了我两周以前不能理解的内容，并且内容将他们以图片和Pre-Visualizer的形式实现，我认为这是挺有成就感的一件事。

@@ -68,30 +68,12 @@ public:
 
 	Vec3f getSpecularColor() const { return specularColor; }
 	Vec3f getReflectiveColor() const { return reflectiveColor; }
-	Vec3f getTransparentColor() const{ return transparentColor; }
+	Vec3f getTransparentColor() const { return transparentColor; }
 	float getIndexOfRefraction() const { return indexOfRefraction; }
 	// In Blinn-Torrance' s Phong Model
 	// L0 = Ambient + Diffuse + Speclture
 	// And we put Ambient out of this function  
-	virtual Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const
-	{
-		// ray's direction should be normalize since it maybe transform, and it does matter
-		Vec3f light_dir = dirToLight;
-		light_dir.Normalize();
-		Vec3f ray_dir = ray.getDirection();
-		ray_dir.Normalize();
-		//Diffuse Part
-		Vec3f diffuse = this->getDiffuseColor() * max(hit.getNormal().Dot3(light_dir), 0);
-		//Specular Part
-		//In Blinn-Torrance' s solution, L = (l + v).normalize() dot hit.normal
-		//But in our input the ray is from camera to object
-		//So l - v is correct
-		Vec3f beta = light_dir - ray_dir;
-		beta.Normalize();
-		Vec3f specular = this->getSpecularColor() * pow(max(beta.Dot3(hit.getNormal()), 0), exponent);
-		//return part
-		return (specular + diffuse) * lightColor;
-	}
+	virtual Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const;
 
 	void glSetMaterial(void) const {
 
@@ -145,10 +127,10 @@ public:
 			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
 			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, diffuse);
 			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, zero);
-	}
+		}
 
 #endif
-}
+	}
 
 };
 #endif

@@ -4,11 +4,11 @@
 #include "hit.h"
 #include "light.h"
 #include "group.h"
-#include "material.h"
 #include "scene_parser.h"
 #include "orthographic.h"
 #include "camera.h"
 #include "glCanvas.h"
+#include "material.h"
 #include<iostream>
 #include<string.h>
 #include<assert.h>
@@ -16,22 +16,8 @@
 extern bool shade_back, gui_used, gouraud_used;
 extern int theta_num, phi_num;
 void ray_trace(int argc, char** argv);
-Vec3f mirrorDirection(const Vec3f& normal, const Vec3f& incoming)
-{
-	Vec3f n = normal, v = incoming;
-	n.Normalize();
-	v.Normalize();
-	Vec3f mirror = v - 2 * n.Dot3(v) * n;
-	mirror.Normalize();
-	return	mirror;
-}
-
-bool transmittedDirection(const Vec3f& normal, const Vec3f& incoming,
-	float index_i, float index_t, Vec3f& transmitted)
-{
-
-}
-
+Vec3f mirrorDirection(const Vec3f& normal, const Vec3f& incoming);
+bool transmittedDirection(const Vec3f& normal, const Vec3f& incoming, float index_i, float index_t, Vec3f& transmitted);
 class RayTracer
 {
 	SceneParser* parser;
@@ -53,6 +39,7 @@ public:
 		if (bounces > max_bounces)
 			return Vec3f(0, 0, 0);
 		Vec3f phong_color;
+		Vec3f sum_up;
 		Object3D* group = parser->getGroup();
 		if (group->intersect(ray, hit, tmin))
 		{
@@ -88,22 +75,41 @@ public:
 					else
 					{
 						RayTree::AddShadowSegment(light_ray, 0, dis);
-						//TODO: RayTree
 					}
 				}
 				color += flag * hit.getMaterial()->Shade(ray, hit, dir, col);
-				//∑¥…‰
-				if (hit.getMaterial()->getReflectiveColor().Length() > 0)
+			}
+			//∑¥…‰
+			if (hit.getMaterial()->getReflectiveColor().Length() > 0)
+			{
+				Vec3f reflect = mirrorDirection(hit.getNormal(), ray.getDirection());
+				Ray reflect_ray = Ray(hit.getIntersectionPoint(), reflect);
+				Hit reflect_hit;
+				color += traceRay(reflect_ray, EPSILON, bounces + 1, weight, indexOfRefraction, reflect_hit) * hit.getMaterial()->getReflectiveColor();
+				RayTree::AddReflectedSegment(reflect_ray, 0, reflect_hit.getT());
+			}
+			//’€…‰
+			if (hit.getMaterial()->getTransparentColor().Length() > 0)
+			{
+				bool flag;
+				Vec3f transmitted;
+				float to_index;
+				if (ray.getDirection().Dot3(hit.getNormal()) < 0)
+					to_index = hit.getMaterial()->getIndexOfRefraction();
+				else
+					to_index = 1;
+				flag = transmittedDirection(hit.getNormal(), ray.getDirection(), indexOfRefraction, to_index, transmitted);
+				if (flag)
 				{
-					Vec3f reflect = mirrorDirection(hit.getNormal(), ray.getDirection());
-					Ray reflect_ray = Ray(hit.getIntersectionPoint(), reflect);
-					Hit reflect_hit;
-					color += traceRay(reflect_ray, EPSILON, bounces + 1, weight, indexOfRefraction, reflect_hit) * hit.getMaterial()->getReflectiveColor();
-					RayTree::AddReflectedSegment(reflect_ray, 0, reflect_hit.getT());
+					Ray transmitted_ray(hit.getIntersectionPoint(), transmitted);
+					Hit transmitted_hit;
+					Vec3f tmp = traceRay(transmitted_ray, EPSILON, bounces + 1, weight, to_index, transmitted_hit) * hit.getMaterial()->getTransparentColor();
+					sum_up += tmp;
+					color += tmp;
+					RayTree::AddTransmittedSegment(transmitted_ray, 0, transmitted_hit.getT());
 				}
-				//’€…‰
-
- 			}			
+			}
+			//cout << sum_up << endl;
 			return color;
 		}
 		else if (bounces == 0)
@@ -111,6 +117,6 @@ public:
 			RayTree::SetMainSegment(ray, 0, 10);
 			// if no intersect, return the backgroug Color
 		}
-			return parser->getBackgroundColor();
+		return parser->getBackgroundColor();
 	}
 };
