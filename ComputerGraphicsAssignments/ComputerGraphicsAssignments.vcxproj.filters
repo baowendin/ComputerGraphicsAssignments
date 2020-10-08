@@ -78,6 +78,9 @@
     <ClInclude Include="rayTree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="boundingbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="scene_parser.cpp">
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="material.cpp">
       <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="boundingbox.cpp">
+      <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

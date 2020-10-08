@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="boundingbox.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="glCanvas.h" />
     <ClInclude Include="group.h" />
@@ -162,6 +163,7 @@
     <ClInclude Include="vectors.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="boundingbox.cpp" />
     <ClCompile Include="glCanvas.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="light.cpp" />

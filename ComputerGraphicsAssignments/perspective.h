@@ -91,7 +91,7 @@ public:
 		// ===========================================
 		// ASSIGNMENT 3: Fix any other affected values
 		// ===========================================
-		Vec3f::Cross3(hor, up, direction);
+		Vec3f::Cross3(hor, direction, up);
 		hor.Normalize();
 		/*
 		Vec3f::Cross3(up, hor, direction);
