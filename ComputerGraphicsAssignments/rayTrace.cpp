@@ -8,11 +8,13 @@ float depth_min = 0;
 float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
-bool shade_back = false, gui_used = false, gouraud_used = false;
+bool shade_back = false, gui_used = false, gouraud_used = false, grid_used = false, visualize_grid = false;
+int nx, ny, nz;
 bool shadows = false;
 int max_bounces = 1, cutoff_weight;
 int theta_num = 20, phi_num = 10;
 SceneParser* parser;
+Grid* grid = NULL;
 void shade();
 void trace(float x, float y);
 void ray_trace(int argc, char** argv)
@@ -80,6 +82,18 @@ void ray_trace(int argc, char** argv)
 			i++; assert(i < argc);
 			cutoff_weight = atof(argv[i]);
 		}
+		else if (!strcmp(argv[i], "-grid")) {
+			grid_used = true;
+			i++; assert(i < argc);
+			nx = atof(argv[i]);
+			i++; assert(i < argc);
+			ny = atof(argv[i]);
+			i++; assert(i < argc);
+			nz = atof(argv[i]);
+		}
+		else if (!strcmp(argv[i], "-visualize_grid")) {
+			visualize_grid = true;
+		}
 		else {
 			printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
 			assert(0);
@@ -87,10 +101,14 @@ void ray_trace(int argc, char** argv)
 	}
 	parser = new SceneParser(input_file);
 	//Main Code Part
+	BoundingBox* boundingbox;
 	if (gui_used)
 	{
+		boundingbox = parser->getGroup()->getBoundingBox();
+		grid = new Grid(boundingbox, nx, ny, nz);
+		parser->getGroup()->insertIntoGrid(grid, nullptr);
 		GLCanvas glcanvas;
-		glcanvas.initialize(parser, shade, trace);
+		glcanvas.initialize(parser, shade, trace, grid, visualize_grid);
 	}
 	else
 	{
@@ -103,7 +121,8 @@ void shade()
 	Image out_image(width, height);
 	Camera* camera = parser->getCamera();
 	float tmin = camera->getTMin();
-	RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
+	RayTracer raytracer(parser, grid);
+	//RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
 	for (int i = 0; i < out_image.Width(); i++)
 	{
 		for (int j = 0; j < out_image.Height(); j++)
@@ -125,7 +144,8 @@ void trace(float x, float y)
 {
 	Camera* camera = parser->getCamera();
 	float tmin = camera->getTMin();
-	RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
+	//RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
+	RayTracer raytracer(parser, grid);
 	Vec2f point(x - 0.5, y - 0.5);
 	Ray ray = camera->generateRay(point);
 	Hit hit_result;

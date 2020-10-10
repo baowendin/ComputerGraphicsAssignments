@@ -11,6 +11,7 @@ protected:
 	BoundingBox* boundingbox;
 public:
 	virtual bool intersect(const Ray& r, Hit& h, float tmin) = 0;
+	virtual void insertIntoGrid(Grid* g, Matrix* m) {/*do nothing*/}
 	Object3D(){}
 	void set_material(Material* m)
 	{
@@ -31,6 +32,10 @@ public:
 	}
 	virtual void paint() = 0;
 
+	BoundingBox* getBoundingBox()
+	{
+		return boundingbox;
+	}
 
 };
 #endif // !_OBJECT3D_H

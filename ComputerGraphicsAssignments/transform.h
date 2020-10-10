@@ -13,6 +13,22 @@ public:
 	{
 		this->m = m;
 		this->o = o;
+		if (o->getBoundingBox())
+		{
+			Vec3f vec[2];
+			vec[0] = o->getBoundingBox()->getMin();
+			vec[1] = o->getBoundingBox()->getMax();
+			for (int i = 1; i < 8; i++)
+			{
+				//ÓÐµãÇÉÃî
+				Vec3f v = Vec3f(vec[i & 1].x(), vec[(i >> 1) & 1].y(), vec[(i >> 2) & 1].z());
+				m.Transform(v);
+				if (boundingbox)
+					boundingbox->Extend(v);
+				else
+					boundingbox = new BoundingBox(v, v);
+			}
+		}
 	}
 	// Transform the ray, then delegate intersect it to Object3D
 	virtual bool intersect(const Ray& r, Hit& h, float tmin)

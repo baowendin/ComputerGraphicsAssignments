@@ -7,6 +7,11 @@ class Sphere : public Object3D
 {
 	Vec3f center;
 	float radius;
+
+	BoundingBox* calculate_boundingbox()
+	{
+		return new BoundingBox(Vec3f(center.x() - radius, center.y() - radius, center.z() - radius), Vec3f(center.x() + radius, center.y() + radius, center.z() + radius));
+	}
 public:
 	Sphere() {}
 
@@ -15,6 +20,7 @@ public:
 		this->center = c;
 		this->radius = r;
 		this->material = material;
+		this->boundingbox = calculate_boundingbox();
 	}
 
 	bool intersect(const Ray& r, Hit& h, float tmin)
@@ -79,4 +85,6 @@ public:
 	}
 
 	void paint();
+	void insertIntoGrid(Grid* g, Matrix* m);
+	
 };

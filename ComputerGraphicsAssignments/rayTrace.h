@@ -12,9 +12,11 @@
 #include<iostream>
 #include<string.h>
 #include<assert.h>
+#include"grid.h"
 #define EPSILON 0.01
 extern bool shade_back, gui_used, gouraud_used;
 extern int theta_num, phi_num;
+
 void ray_trace(int argc, char** argv);
 Vec3f mirrorDirection(const Vec3f& normal, const Vec3f& incoming);
 bool transmittedDirection(const Vec3f& normal, const Vec3f& incoming, float index_i, float index_t, Vec3f& transmitted);
@@ -24,6 +26,7 @@ class RayTracer
 	int max_bounces;
 	float cutoff_weight;
 	bool shadows;
+	Grid* grid;
 public:
 	RayTracer(SceneParser* s, int max_bounces, float cutoff_weight, bool shadows, ...)
 	{
@@ -32,7 +35,14 @@ public:
 		this->cutoff_weight = cutoff_weight;
 		this->shadows = shadows;
 	}
-
+	//Second Mode
+	RayTracer(SceneParser* s, Grid* grid)
+	{
+		this->parser = s;
+		this->grid = grid;
+		this->shadows = false;
+		this->max_bounces = 1;
+	}
 	Vec3f traceRay(Ray& ray, float tmin, int bounces, float weight,
 		float indexOfRefraction, Hit& hit) const
 	{
@@ -41,9 +51,14 @@ public:
 		Vec3f phong_color;
 		Vec3f sum_up;
 		Object3D* group = parser->getGroup();
+		if (grid)
+		{
+			group = grid;
+			bounces = max_bounces;
+		}
 		if (group->intersect(ray, hit, tmin))
 		{
-			if (bounces == 0) RayTree::SetMainSegment(ray, 0, hit.getT());
+			if (grid || bounces == 0) RayTree::SetMainSegment(ray, 0, hit.getT());
 			Vec3f color = parser->getAmbientLight() * hit.getMaterial()->getDiffuseColor(); // Ambient Part
 			//然后考虑全局光照、反射，折射三个方向
 			//全局光照
@@ -112,7 +127,7 @@ public:
 			//cout << sum_up << endl;
 			return color;
 		}
-		else if (bounces == 0)
+		else if (grid || bounces == 0)
 		{
 			RayTree::SetMainSegment(ray, 0, 10);
 			// if no intersect, return the backgroug Color

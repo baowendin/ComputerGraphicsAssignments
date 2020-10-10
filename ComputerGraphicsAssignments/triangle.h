@@ -1,9 +1,20 @@
 #pragma once
 #include "object3d.h"
 #include "matrix.h"
+#include <algorithm>
+#include "boundingbox.h"
+#define EPSILON 0.0001
 class Triangle : public Object3D
 {
 	Vec3f a, b, c, normal;
+
+	BoundingBox* calculate_boundingbox()
+	{
+		BoundingBox* boundingbox = new BoundingBox(a, a);
+		boundingbox->Extend(b);
+		boundingbox->Extend(c);
+		return boundingbox;
+	}
 public:
 	Triangle(Vec3f& a, Vec3f& b, Vec3f& c, Material* m)
 	{
@@ -11,6 +22,7 @@ public:
 		this->b = b;
 		this->c = c;
 		this->material = m;
+		this->boundingbox = calculate_boundingbox();
 		Vec3f::Cross3(this->normal, b - a, c - b);
 		this->normal.Normalize();
 	}
@@ -64,4 +76,30 @@ public:
 		glVertex3f(c.x(), c.y(), c.z());	
 		glEnd();
 	}
+
+	void insertIntoGrid(Grid* g, Matrix* m)
+	{
+		BoundingBox* grid_box = g->getBoundingBox();
+		Vec3f minimum = boundingbox->getMin() - grid_box->getMin();
+		Vec3f maximum = boundingbox->getMax() - grid_box->getMin();
+
+		minimum.Divide(g->get_cell_size());
+		maximum.Divide(g->get_cell_size());
+
+		maximum += Vec3f(EPSILON, EPSILON, EPSILON);
+		minimum -= Vec3f(EPSILON, EPSILON, EPSILON);
+		//Not same as Sphere, in this case we have no optimization
+		//We just insert the boundingbox into grid
+		for (int i = max(0.f, floor(minimum.x())); i < min(1.f * g->nx, ceil(maximum.x())); i++)
+		{
+			for (int j = max(0.f, floor(minimum.y())); j < min(1.f * g->ny, ceil(maximum.y())); j++)
+			{
+				for (int k = max(0.f, floor(minimum.z())); k < min(1.f * g->nz, ceil(maximum.z())); k++)
+				{
+					g->addObject(i, j, k, this);
+				}
+			}
+		}
+	}
+
 };

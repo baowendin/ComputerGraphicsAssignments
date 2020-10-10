@@ -17,6 +17,16 @@ public:
 	void addObject(int num, Object3D* object)
 	{
 		object_group.push_back(object);
+		if (object_group.size() == 1)
+		{
+			boundingbox = new BoundingBox(object->getBoundingBox()->getMin(), object->getBoundingBox()->getMax());
+		}
+		else
+		{
+			cout << object_group.size() << endl;
+			boundingbox->Extend(object->getBoundingBox());
+		}
+			
 	}
 
 	bool intersect(const Ray& r, Hit& h, float tmin)
@@ -41,5 +51,13 @@ public:
 	{
 		for (auto& object : object_group)
 			object->paint();
+	}
+
+	void insertIntoGrid(Grid* g, Matrix* m)
+	{
+		for (auto& object : object_group)
+		{
+			object->insertIntoGrid(g, m);
+		}
 	}
 };

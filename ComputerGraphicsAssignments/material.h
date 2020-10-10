@@ -66,6 +66,11 @@ public:
 		this->indexOfRefraction = indexOfRefraction;
 	}
 
+	PhongMaterial(const Vec3f& diffuseColor) : Material(diffuseColor)
+	{
+		this->exponent = 1;
+	}
+
 	Vec3f getSpecularColor() const { return specularColor; }
 	Vec3f getReflectiveColor() const { return reflectiveColor; }
 	Vec3f getTransparentColor() const { return transparentColor; }
