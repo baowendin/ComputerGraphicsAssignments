@@ -39,8 +39,9 @@ public:
 		//we just make them look different, even it's wrong 
 		if (dire.Length() < 0.1 || dire.Length() > 1.1)
 		{
-			error_term -= Vec3f(rand(), rand(), rand()) * 0.001;
-			Vec3f dire = Vec3f(error_term.x() < min(error_term.y(), error_term.z()), error_term.y() < min(error_term.x(), error_term.z()), error_term.z() < min(error_term.x(), error_term.y()));
+			
+			//error_term -= Vec3f(rand() % 100, rand() % 100, rand() % 100) * 0.0001;
+			//dire = Vec3f(error_term.x() < min(error_term.y(), error_term.z()), error_term.y() < min(error_term.x(), error_term.z()), error_term.z() < min(error_term.x(), error_term.y()));
 		}
 		//If still (that's almost possible
 		//TODO: set it with a value
@@ -196,21 +197,27 @@ public:
 		sign_x = r.getDirection().x() > 0 ? 1 : -1;
 		sign_y = r.getDirection().y() > 0 ? 1 : -1;
 		sign_z = r.getDirection().z() > 0 ? 1 : -1;
+		if (r.getDirection().x() == 0)
+			sign_x = 0;
+		if (r.getDirection().y() == 0)
+			sign_y = 0;
+		if (r.getDirection().z() == 0)
+			sign_z = 0;
 		mi.direction_sign = Vec3f(sign_x, sign_y, sign_z);
 		mi.dt = r.getDirection() / cell_size;
 		mi.dt.Normalize();
 		//ensure mi.dt.x,y,z !=0 used in finding next cell;
 		if (mi.dt.x() == 0)
 		{
-			mi.dt += Vec3f(0.00001 * sign_x, 0, 0);
+			mi.dt += Vec3f(0.00001, 0, 0);
 		}
 		if (mi.dt.y() == 0)
 		{
-			mi.dt += Vec3f(0, 0.00001 * sign_y, 0);
+			mi.dt += Vec3f(0, 0.00001, 0);
 		}
 		if (mi.dt.z() == 0)
 		{
-			mi.dt += Vec3f(0, 0, 0.00001 * sign_z);
+			mi.dt += Vec3f(0, 0, 0.00001);
 		}
 		// inital_point
 		mi.tmin = max(tmin, min_intersection);
@@ -255,7 +262,9 @@ public:
 			if (!object_list)
 			{
 				if (!out)
+				{
 					break;
+				}			
 				else
 					out--;
 			}
@@ -280,7 +289,7 @@ public:
 					if (!mark)
 						h.set(200, color_collection[min(MAX_COLOR_SIZE - 1, object_list->size() - 1)], mi.normal, r);
 					mark = true;
-					//return true;
+					return true;
 				}
 
 			}
@@ -326,7 +335,7 @@ public:
 		bool plane_result = check_infinite_object(r, plane_hit, tmin);
 		bool result = false; //if we obtain a interection point now
 		// special cases when plane is front of boundingbox or don't intersect with boundingbpox 
-		if (mi.no_intersection || mi.tmin > plane_hit.getT())
+		if (mi.no_intersection || (plane_result && mi.tmin > plane_hit.getT()))
 		{
 			h = plane_hit;
 			return plane_result;

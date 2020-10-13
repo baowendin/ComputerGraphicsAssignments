@@ -37,4 +37,3 @@ Group {
         radius 1 
     }
 }
-
