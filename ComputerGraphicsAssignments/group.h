@@ -21,9 +21,8 @@ public:
 		{
 			boundingbox = new BoundingBox(object->getBoundingBox()->getMin(), object->getBoundingBox()->getMax());
 		}
-		else
+		else if (object->getBoundingBox())
 		{
-			cout << object_group.size() << endl;
 			boundingbox->Extend(object->getBoundingBox());
 		}
 			

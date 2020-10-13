@@ -39,9 +39,36 @@ public:
 		//we just make them look different, even it's wrong 
 		if (dire.Length() < 0.1 || dire.Length() > 1.1)
 		{
-			
-			//error_term -= Vec3f(rand() % 100, rand() % 100, rand() % 100) * 0.0001;
-			//dire = Vec3f(error_term.x() < min(error_term.y(), error_term.z()), error_term.y() < min(error_term.x(), error_term.z()), error_term.z() < min(error_term.x(), error_term.y()));
+			if (error_term.x() == error_term.y() && error_term.x() == error_term.z())
+			{
+				if (dt.x() > dt.y() && dt.x() > dt.z())
+					dire = Vec3f(1, 0, 0);
+				else if (dt.y() > dt.x() && dt.y() > dt.z())
+					dire = Vec3f(0, 1, 0);
+				else
+					dire = Vec3f(0, 0, 1);
+			}
+			else if (error_term.x() == error_term.y())
+			{
+				if (dt.x() > dt.y())
+					dire = Vec3f(1, 0, 0);
+				else
+					dire = Vec3f(0, 1, 0);
+			}
+			else if (error_term.x() == error_term.z())
+			{
+				if (dt.x() > dt.z())
+					dire = Vec3f(1, 0, 0);
+				else
+					dire = Vec3f(0, 0, 1);
+			}
+			else
+			{
+				if (dt.y() > dt.z())
+					dire = Vec3f(0, 1, 0);
+				else
+					dire = Vec3f(0, 0, 1);
+			}
 		}
 		//If still (that's almost possible
 		//TODO: set it with a value
@@ -264,7 +291,7 @@ public:
 				if (!out)
 				{
 					break;
-				}			
+				}
 				else
 					out--;
 			}
@@ -373,6 +400,7 @@ public:
 					return true;
 				}
 			}
+			//cout << mi.cur_x << mi.cur_y << mi.cur_z << endl;
 			mi.next_cell();
 		}
 		return false;
