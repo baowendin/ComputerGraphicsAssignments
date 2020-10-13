@@ -64,7 +64,7 @@ void Sphere::insertIntoGrid(Grid* g, Matrix* m)
 				float center_dis = (center - g->get_center(i, j, k)).Length();
 				float dialog_dis = g->get_halfdialog();
 				//由于球不是透明的，所以我们仅仅需要处理球的外壳和cell相交
-				if (center_dis - dialog_dis < radius && center_dis + dialog_dis > radius)
+				if (center_dis - dialog_dis <= radius && center_dis + dialog_dis >= radius)
 					g->addObject(i, j, k, this);
 			}
 }

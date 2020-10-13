@@ -12,9 +12,10 @@
 #include<iostream>
 #include<string.h>
 #include<assert.h>
+#include "raytracing_stats.h"
 #include"grid.h"
 #define EPSILON 0.01
-extern bool shade_back, gui_used, gouraud_used;
+extern bool shade_back, gui_used, gouraud_used, visualize_grid;
 extern int theta_num, phi_num;
 
 void ray_trace(int argc, char** argv);
@@ -28,12 +29,13 @@ class RayTracer
 	bool shadows;
 	Grid* grid;
 public:
-	RayTracer(SceneParser* s, int max_bounces, float cutoff_weight, bool shadows, ...)
+	RayTracer(SceneParser* s, int max_bounces, float cutoff_weight, bool shadows, Grid* grid ...)
 	{
 		this->parser = s;
 		this->max_bounces = max_bounces;
 		this->cutoff_weight = cutoff_weight;
 		this->shadows = shadows;
+		this->grid = grid;
 	}
 	//Second Mode
 	RayTracer(SceneParser* s, Grid* grid)
@@ -43,6 +45,15 @@ public:
 		this->shadows = false;
 		this->max_bounces = 1;
 	}
+
+	bool get_intersect(Object3D* group, Ray& ray, Hit& hit, float tmin) const
+	{
+		if (grid && !visualize_grid)
+			return grid->intersect_real(ray, hit, tmin);
+		else
+			return group->intersect(ray, hit, tmin);
+	}
+
 	Vec3f traceRay(Ray& ray, float tmin, int bounces, float weight,
 		float indexOfRefraction, Hit& hit) const
 	{
@@ -56,7 +67,7 @@ public:
 			group = grid;
 			bounces = max_bounces;
 		}
-		if (group->intersect(ray, hit, tmin))
+		if (get_intersect(group, ray, hit, tmin))
 		{
 			if (grid || bounces == 0) RayTree::SetMainSegment(ray, 0, hit.getT());
 			Vec3f color = parser->getAmbientLight() * hit.getMaterial()->getDiffuseColor(); // Ambient Part
@@ -74,7 +85,7 @@ public:
 				{
 					Hit light_hit;
 					Ray light_ray(p, dir);
-					//cout << dir << endl;
+					RayTracingStats::IncrementNumShadowRays();
 					if (group->intersect(light_ray, light_hit, EPSILON))
 					{
 						if (dis > light_hit.getT())
@@ -92,6 +103,8 @@ public:
 						RayTree::AddShadowSegment(light_ray, 0, dis);
 					}
 				}
+				else
+					RayTracingStats::IncrementNumNonShadowRays();
 				color += flag * hit.getMaterial()->Shade(ray, hit, dir, col);
 			}
 			//∑¥…‰

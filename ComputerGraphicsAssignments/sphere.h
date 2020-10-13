@@ -25,6 +25,7 @@ public:
 
 	bool intersect(const Ray& r, Hit& h, float tmin)
 	{
+		RayTracingStats::IncrementNumIntersections();
 		Vec3f source = r.getOrigin();
 		source -= center;
 		//cout << source << endl;

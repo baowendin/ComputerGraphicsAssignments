@@ -29,6 +29,7 @@ public:
 
 	bool intersect(const Ray& r, Hit& h, float tmin)
 	{
+		RayTracingStats::IncrementNumIntersections();
 		Vec3f direction = r.getDirection(), origin = r.getOrigin();
 		float A = det3x3(
 			a.x() - b.x(), a.x() - c.x(), direction.x(),

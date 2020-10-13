@@ -8,6 +8,7 @@ class Plane : public Object3D
 public:
 	bool intersect(const Ray& r, Hit& h, float tmin)
 	{
+		RayTracingStats::IncrementNumIntersections();
 		if (normal.Dot3(r.getDirection()) == 0)
 		{
 			if (normal.Dot3(r.getOrigin()) != d)

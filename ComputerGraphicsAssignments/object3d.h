@@ -4,6 +4,7 @@
 #include"ray.h"
 #include"hit.h"
 #include "boundingbox.h"
+#include "raytracing_stats.h"
 class Object3D
 {
 protected:

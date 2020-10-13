@@ -8,6 +8,7 @@
 #include "boundingbox.h"
 #include "material.h"
 #include<vector>
+#include<unordered_set>
 using namespace std;
 class MarchingInfo
 {
@@ -31,6 +32,7 @@ public:
 
 	void next_cell()
 	{
+		RayTracingStats::IncrementNumGridCellsTraversed();
 		//find the next cell
 		Vec3f dire = Vec3f(error_term.x() < min(error_term.y(), error_term.z()), error_term.y() < min(error_term.x(), error_term.z()), error_term.z() < min(error_term.x(), error_term.y()));
 		//dire.length() should be 1, but there are special cases that it's too close to distinguish using float
@@ -52,6 +54,7 @@ class Grid : public Object3D
 {
 protected:
 	vector<vector<Object3D*> > record;
+	vector<Object3D*> infinite_object_list;
 	Vec3f cell_size;
 	Material* color_collection[10];
 	vector<Object3D*>* get_record(int i, int j, int k)
@@ -232,6 +235,7 @@ public:
 		// You can just try simple cases to understand it, note that mi.dt is directional, which means it may be negative
 		mi.error_term = (mi.pos - pos + 0.5 * mi.direction_sign + Vec3f(0.5, 0.5, 0.5)) / mi.dt;
 	}
+
 	bool intersect(const Ray& r, Hit& h, float tmin)
 	{
 		bool mark = false;
@@ -248,7 +252,7 @@ public:
 		while (true)
 		{
 			auto object_list = get_record(mi.cur_x, mi.cur_y, mi.cur_z);
-			if (!object_list) 
+			if (!object_list)
 			{
 				if (!out)
 					break;
@@ -256,20 +260,20 @@ public:
 					out--;
 			}
 			else
-			{				
+			{
 				for (int i = 0; i < 6; i++)
 				{
-					auto faces = getFace(mi.cur_x, mi.cur_y, mi.cur_z, i);					
+					auto faces = getFace(mi.cur_x, mi.cur_y, mi.cur_z, i);
 					auto normal = getNormal(i);
 					RayTree::AddHitCellFace(faces[0], faces[1], faces[2], faces[3], normal, color_collection[min(MAX_COLOR_SIZE - 1, object_list->size())]);
-				}		
+				}
 				//draw enter face
 				int index = mi.normal.Dot3(Vec3f(1, 3, 5));
 				if (index < 0) index = -index;
 				else index -= 1;
 				index = max(min(index, 5), 0);
 				auto faces = getFace(mi.cur_x, mi.cur_y, mi.cur_z, index);
-				RayTree::AddEnteredFace(faces[0], faces[1], faces[2], faces[3], mi.normal, color_collection[min(MAX_COLOR_SIZE - 1, object_list->size())]);		
+				RayTree::AddEnteredFace(faces[0], faces[1], faces[2], faces[3], mi.normal, color_collection[min(MAX_COLOR_SIZE - 1, object_list->size())]);
 				//if the cell is not empty
 				if (object_list->size() > 0)
 				{
@@ -278,10 +282,90 @@ public:
 					mark = true;
 					//return true;
 				}
-				
+
 			}
 			mi.next_cell();
 		}
 		return mark;
+	}
+	//judge if it's intersect with a plane, which is stored in a vector
+	bool check_infinite_object(const Ray& r, Hit& h, float tmin)
+	{
+		bool result = false;
+		for (auto& object : infinite_object_list)
+		{
+			Hit tmp;
+			if (object->intersect(r, tmp, tmin))
+			{
+				if (!result || h.getT() > tmp.getT())
+					h = tmp;
+				result = true;
+			}
+		}
+		return result;
+	}
+
+	bool inside_grid(MarchingInfo mi, Vec3f point)
+	{
+		Vec3f t = Vec3f(mi.cur_x, mi.cur_y, mi.cur_z);
+		Vec3f minimum = boundingbox->getMin() + cell_size * t;
+		Vec3f maximum = boundingbox->getMin() + cell_size * (t + Vec3f(1, 1, 1));
+		if (point.x() >= minimum.x() && point.y() >= minimum.y() && point.z() >= minimum.z() &&
+			point.x() <= maximum.x() && point.y() <= maximum.y() && point.z() <= maximum.z())
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool intersect_real(const Ray& r, Hit& h, float tmin)
+	{
+		MarchingInfo mi;
+		initializeRayMarch(mi, r, tmin);
+		Hit plane_hit;
+		bool plane_result = check_infinite_object(r, plane_hit, tmin);
+		bool result = false; //if we obtain a interection point now
+		// special cases when plane is front of boundingbox or don't intersect with boundingbpox 
+		if (mi.no_intersection || mi.tmin > plane_hit.getT())
+		{
+			h = plane_hit;
+			return plane_result;
+		}
+
+		int out = 1;
+		unordered_set<Object3D*> set;
+		//So we need an out to give it a chance 
+		while (true)
+		{
+			auto object_list = get_record(mi.cur_x, mi.cur_y, mi.cur_z);
+			if (!object_list)
+			{
+				if (!out)
+					break;
+				else
+					out--;
+			}
+			else
+			{
+				for (auto& object : *object_list)
+					if (set.find(object) == set.end())
+					{
+						Hit tmp;
+						if (object->intersect(r, tmp, tmin))
+						{
+							if (!result || tmp.getT() < h.getT())
+								h = tmp;
+							result = true;
+						}
+						set.insert(object);
+					}
+				if (result && inside_grid(mi, r.pointAtParameter(h.getT())))
+				{
+					return true;
+				}
+			}
+			mi.next_cell();
+		}
+		return false;
 	}
 };

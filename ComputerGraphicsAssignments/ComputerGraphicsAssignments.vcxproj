@@ -156,6 +156,7 @@
     <ClInclude Include="ray.h" />
     <ClInclude Include="raycast.h" />
     <ClInclude Include="rayTrace.h" />
+    <ClInclude Include="raytracing_stats.h" />
     <ClInclude Include="rayTree.h" />
     <ClInclude Include="scene_parser.h" />
     <ClInclude Include="sphere.h" />
@@ -173,6 +174,7 @@
     <ClCompile Include="matrix.cpp" />
     <ClCompile Include="raycast.cpp" />
     <ClCompile Include="rayTrace.cpp" />
+    <ClCompile Include="raytracing_stats.cpp" />
     <ClCompile Include="rayTree.cpp" />
     <ClCompile Include="scene_parser.cpp" />
     <ClCompile Include="sphere.cpp" />

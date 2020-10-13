@@ -8,7 +8,7 @@ float depth_min = 0;
 float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
-bool shade_back = false, gui_used = false, gouraud_used = false, grid_used = false, visualize_grid = false;
+bool shade_back = false, gui_used = false, gouraud_used = false, grid_used = false, visualize_grid = false, tracing_stats = false;
 int nx, ny, nz;
 bool shadows = false;
 int max_bounces = 1, cutoff_weight;
@@ -94,19 +94,25 @@ void ray_trace(int argc, char** argv)
 		else if (!strcmp(argv[i], "-visualize_grid")) {
 			visualize_grid = true;
 		}
+		else if (!strcmp(argv[i], "-stats")) {
+			tracing_stats = true;
+		}
 		else {
 			printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
 			assert(0);
 		}
 	}
 	parser = new SceneParser(input_file);
-	//Main Code Part
-	BoundingBox* boundingbox;
-	if (gui_used)
+	if (grid_used)
 	{
+		BoundingBox* boundingbox;
 		boundingbox = parser->getGroup()->getBoundingBox();
 		grid = new Grid(boundingbox, nx, ny, nz);
 		parser->getGroup()->insertIntoGrid(grid, nullptr);
+	}
+	//Main Code Part
+	if (gui_used)
+	{
 		GLCanvas glcanvas;
 		glcanvas.initialize(parser, shade, trace, grid, visualize_grid);
 	}
@@ -121,7 +127,9 @@ void shade()
 	Image out_image(width, height);
 	Camera* camera = parser->getCamera();
 	float tmin = camera->getTMin();
-	RayTracer raytracer(parser, grid);
+	RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows, grid);
+	//raytracing status initialize
+	RayTracingStats::Initialize(width, height, parser->getGroup()->getBoundingBox(), nx, ny, nz);
 	//RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows);
 	for (int i = 0; i < out_image.Width(); i++)
 	{
@@ -136,6 +144,8 @@ void shade()
 		}
 
 	}
+	if (tracing_stats)
+		RayTracingStats::PrintStatistics();
 	if (output_file)
 		out_image.SaveTGA(output_file);
 }
@@ -168,7 +178,7 @@ bool transmittedDirection(const Vec3f& normal, const Vec3f& incoming,
 	Vec3f n = normal, i = incoming;
 	n.Normalize();
 	i.Normalize();
-	float cos_theta = n.Dot3(i);	
+	float cos_theta = n.Dot3(i);
 	Vec3f m = -cos_theta * n + i;
 	float in_sin = m.Length();
 	float out_sin = in_sin * index_i / index_t;
