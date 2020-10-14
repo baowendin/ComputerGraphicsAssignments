@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="boundingbox.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="checkerboard.h" />
     <ClInclude Include="glCanvas.h" />
     <ClInclude Include="grid.h" />
     <ClInclude Include="group.h" />

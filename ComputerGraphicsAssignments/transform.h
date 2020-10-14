@@ -66,4 +66,22 @@ public:
 		glPopMatrix();
 
 	}
+
+	virtual void insertIntoGrid(Grid* g, Matrix* m)
+	{
+		if (!m)
+		{
+			m = new Matrix(this->m);
+			o->insertIntoGrid(g, m);
+			delete m;
+		}
+		else
+		{
+			Matrix* new_m = new Matrix(*m);
+			*new_m *= (this->m);
+			o->insertIntoGrid(g, new_m);
+			delete new_m;
+		}
+		
+	}
 };

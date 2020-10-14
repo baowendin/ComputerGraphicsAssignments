@@ -11,7 +11,7 @@ char* normal_file = NULL;
 bool shade_back = false, gui_used = false, gouraud_used = false, grid_used = false, visualize_grid = false, tracing_stats = false;
 int nx, ny, nz;
 bool shadows = false;
-int max_bounces = 1, cutoff_weight;
+int max_bounces = 0, cutoff_weight;
 int theta_num = 20, phi_num = 10;
 SceneParser* parser;
 Grid* grid = NULL;
@@ -108,6 +108,9 @@ void ray_trace(int argc, char** argv)
 		BoundingBox* boundingbox;
 		boundingbox = parser->getGroup()->getBoundingBox();
 		grid = new Grid(boundingbox, nx, ny, nz);
+		//At first In my design, I set matrix as E
+		//But there's a big problem that every ray would be transformed in this case
+		//So it should be nullptr 
 		parser->getGroup()->insertIntoGrid(grid, nullptr);
 	}
 	//Main Code Part
@@ -141,6 +144,8 @@ void shade()
 			Hit hit;
 			Vec3f color = raytracer.traceRay(ray, tmin, 0, 0, 1, hit);
 			out_image.SetPixel(i, j, color);
+			if (j == 0)
+				cout << i << j << endl;
 		}
 
 	}

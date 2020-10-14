@@ -43,7 +43,7 @@ public:
 		this->parser = s;
 		this->grid = grid;
 		this->shadows = false;
-		this->max_bounces = 1;
+		this->max_bounces = 0;
 	}
 
 	bool get_intersect(Object3D* group, Ray& ray, Hit& hit, float tmin) const
@@ -65,7 +65,6 @@ public:
 		if (grid)
 		{
 			group = grid;
-			bounces = max_bounces;
 		}
 		if (get_intersect(group, ray, hit, tmin))
 		{

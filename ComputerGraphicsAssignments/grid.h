@@ -7,8 +7,11 @@
 #include "material.h"
 #include "boundingbox.h"
 #include "material.h"
+#include "matrix.h"
+#include "transform.h"
 #include<vector>
 #include<unordered_set>
+#include<unordered_map>
 using namespace std;
 class MarchingInfo
 {
@@ -85,6 +88,7 @@ protected:
 	vector<Object3D*> infinite_object_list;
 	Vec3f cell_size;
 	Material* color_collection[10];
+	unordered_map<Object3D*, Matrix> matrix_map;
 	vector<Object3D*>* get_record(int i, int j, int k)
 	{
 		if (i < 0 || i >= nx)
@@ -331,6 +335,13 @@ public:
 		}
 		return mark;
 	}
+
+	void insert_matrix(Object3D* object, Matrix* m)
+	{	
+		Matrix matrix(*m);
+		matrix_map[object] = matrix;
+	}
+
 	//judge if it's intersect with a plane, which is stored in a vector
 	bool check_infinite_object(const Ray& r, Hit& h, float tmin)
 	{
@@ -359,6 +370,15 @@ public:
 			return true;
 		}
 		return false;
+	}
+	bool check_insert(Object3D* object,const Ray& ray, Hit& hit, float tmin)
+	{
+		if (matrix_map.find(object) == matrix_map.end())
+		{
+			return object->intersect(ray, hit, tmin);
+		}
+		Transform transform(matrix_map[object], object);
+		return transform.intersect(ray, hit, tmin);
 	}
 
 	bool intersect_real(const Ray& r, Hit& h, float tmin)
@@ -392,7 +412,8 @@ public:
 					if (set.find(object) == set.end())
 					{
 						Hit tmp;
-						if (object->intersect(r, tmp, mi.tmin))
+						//if (object->intersect(r, tmp, mi.tmin))
+						if (check_insert(object, r, tmp, mi.tmin))
 						{
 							if (!result || tmp.getT() < h.getT())
 								h = tmp;

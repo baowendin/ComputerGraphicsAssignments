@@ -79,10 +79,22 @@ public:
 	}
 
 	void insertIntoGrid(Grid* g, Matrix* m)
-	{
-		BoundingBox* grid_box = g->getBoundingBox();
-		Vec3f minimum = boundingbox->getMin() - grid_box->getMin();
-		Vec3f maximum = boundingbox->getMax() - grid_box->getMin();
+	{	
+		if (m)
+			g->insert_matrix(this, new Matrix(*m));
+		BoundingBox* grid_box = boundingbox;
+		if (m)
+		{
+			Vec3f a1 = a, b1 = b, c1 = c;
+			m->Transform(a1);
+			m->Transform(b1);
+			m->Transform(c1);
+			grid_box = new BoundingBox(a1, a1);
+			grid_box->Extend(b1);
+			grid_box->Extend(c1);
+		}
+		Vec3f minimum = grid_box->getMin() - g->getBoundingBox()->getMin();
+		Vec3f maximum = grid_box->getMax() - g->getBoundingBox()->getMin();
 
 		minimum.Divide(g->get_cell_size());
 		maximum.Divide(g->get_cell_size());
@@ -91,6 +103,7 @@ public:
 		minimum -= Vec3f(EPSILON, EPSILON, EPSILON);
 		//Not same as Sphere, in this case we have no optimization
 		//We just insert the boundingbox into grid
+		//so the boundingbox of triangle is a rectangle
 		for (int i = max(0.f, floor(minimum.x())); i < min(1.f * g->nx, ceil(maximum.x())); i++)
 		{
 			for (int j = max(0.f, floor(minimum.y())); j < min(1.f * g->ny, ceil(maximum.y())); j++)

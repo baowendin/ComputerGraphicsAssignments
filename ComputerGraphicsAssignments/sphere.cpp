@@ -57,14 +57,29 @@ void Sphere::paint()
 
 void Sphere::insertIntoGrid(Grid* g, Matrix* m)
 {
+	if (m)
+		g->insert_matrix(this, new Matrix(*m));
+	Vec3f trans_c = center;
+	if (m)
+	{
+		m->Transform(trans_c);
+	}
 	for (int i = 0; i < g->nx; i++)
 		for (int j = 0; j < g->ny; j++)
 			for (int k = 0; k < g->nz; k++)
 			{
-				float center_dis = (center - g->get_center(i, j, k)).Length();
+				float center_dis = (trans_c - g->get_center(i, j, k)).Length();
 				float dialog_dis = g->get_halfdialog();
+				float trans_r = radius;
 				//由于球不是透明的，所以我们仅仅需要处理球的外壳和cell相交
-				if (center_dis - dialog_dis <= radius && center_dis + dialog_dis >= radius)
+				if (m)
+				{
+					Vec3f dir = g->get_center(i, j, k) - trans_c;
+					dir.Normalize();
+					m->TransformDirection(dir);
+					trans_r = radius * dir.Length();
+				}
+				if (center_dis - dialog_dis <= trans_r && center_dis + dialog_dis >= trans_r)
 					g->addObject(i, j, k, this);
 			}
 }
