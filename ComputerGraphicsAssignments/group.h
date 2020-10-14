@@ -17,11 +17,14 @@ public:
 	void addObject(int num, Object3D* object)
 	{
 		object_group.push_back(object);
+		// extend the boundingbox part
+		if (!object->getBoundingBox())
+			return;
 		if (object_group.size() == 1)
 		{
 			boundingbox = new BoundingBox(object->getBoundingBox()->getMin(), object->getBoundingBox()->getMax());
 		}
-		else if (object->getBoundingBox())
+		else
 		{
 			boundingbox->Extend(object->getBoundingBox());
 		}

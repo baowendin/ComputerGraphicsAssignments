@@ -69,4 +69,9 @@ public:
 		glVertex3f(d.x(), d.y(), d.z());
 		glEnd();
 	}
+
+	virtual void insertIntoGrid(Grid* g, Matrix* m)
+	{
+		g->addInfiniteObject(this);
+	}
 };

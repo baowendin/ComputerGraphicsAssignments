@@ -141,6 +141,11 @@ public:
 	{
 		get_record(i, j, k)->push_back(object);
 	}
+
+	void addInfiniteObject(Object3D* object)
+	{
+		infinite_object_list.push_back(object);
+	}
 	//画6个面，比较hardcode就不做修改了
 	Vec3f getNormal(int type)
 	{
@@ -360,14 +365,12 @@ public:
 	{
 		MarchingInfo mi;
 		initializeRayMarch(mi, r, tmin);
-		Hit plane_hit;
-		bool plane_result = check_infinite_object(r, plane_hit, tmin);
-		bool result = false; //if we obtain a interection point now
-		// special cases when plane is front of boundingbox or don't intersect with boundingbpox 
-		if (mi.no_intersection || (plane_result && mi.tmin > plane_hit.getT()))
+		bool result = check_infinite_object(r, h, tmin);
+		 //if we obtain a interection point now
+		// special cases when plane is front of boundingbox or ray don't intersect with boundingbpox 
+		if (mi.no_intersection || (result && mi.tmin > h.getT()))
 		{
-			h = plane_hit;
-			return plane_result;
+			return result;
 		}
 
 		int out = 1;
@@ -406,6 +409,6 @@ public:
 			//cout << mi.cur_x << mi.cur_y << mi.cur_z << endl;
 			mi.next_cell();
 		}
-		return false;
+		return result;
 	}
 };
