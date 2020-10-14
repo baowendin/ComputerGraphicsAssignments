@@ -267,7 +267,9 @@ public:
 		// Maybe it's difficult at first to understand what's fucking 0.5 * normal + vec3f(0.5) do
 		// It's just calculate the distance to next cell
 		// You can just try simple cases to understand it, note that mi.dt is directional, which means it may be negative
-		mi.error_term = (mi.pos - pos + 0.5 * mi.direction_sign + Vec3f(0.5, 0.5, 0.5)) / mi.dt;
+		Vec3f tmp = (mi.pos - pos + 0.5 * mi.direction_sign + Vec3f(0.5, 0.5, 0.5)) / mi.dt;
+		mi.error_term = Vec3f(mi.direction_sign.x() == 0 ? FLT_MAX : tmp.x(), mi.direction_sign.y() == 0 ? FLT_MAX : tmp.y(), mi.direction_sign.z() == 0 ? FLT_MAX : tmp.z());
+		//cout << pos << endl;
 	}
 
 	bool intersect(const Ray& r, Hit& h, float tmin)
@@ -344,8 +346,8 @@ public:
 	bool inside_grid(MarchingInfo mi, Vec3f point)
 	{
 		Vec3f t = Vec3f(mi.cur_x, mi.cur_y, mi.cur_z);
-		Vec3f minimum = boundingbox->getMin() + cell_size * t;
-		Vec3f maximum = boundingbox->getMin() + cell_size * (t + Vec3f(1, 1, 1));
+		Vec3f minimum = boundingbox->getMin() + cell_size * t - Vec3f(EPSILON, EPSILON, EPSILON);
+		Vec3f maximum = boundingbox->getMin() + cell_size * (t + Vec3f(1, 1, 1)) + Vec3f(EPSILON, EPSILON, EPSILON);
 		if (point.x() >= minimum.x() && point.y() >= minimum.y() && point.z() >= minimum.z() &&
 			point.x() <= maximum.x() && point.y() <= maximum.y() && point.z() <= maximum.z())
 		{
@@ -382,12 +384,12 @@ public:
 					out--;
 			}
 			else
-			{
+			{				
 				for (auto& object : *object_list)
 					if (set.find(object) == set.end())
 					{
 						Hit tmp;
-						if (object->intersect(r, tmp, tmin))
+						if (object->intersect(r, tmp, mi.tmin))
 						{
 							if (!result || tmp.getT() < h.getT())
 								h = tmp;
@@ -395,9 +397,10 @@ public:
 						}
 						set.insert(object);
 					}
-				if (result && inside_grid(mi, r.pointAtParameter(h.getT())))
+				if (result)
 				{
-					return true;
+					if (inside_grid(mi, h.getIntersectionPoint()))
+						return true;
 				}
 			}
 			//cout << mi.cur_x << mi.cur_y << mi.cur_z << endl;

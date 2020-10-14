@@ -134,11 +134,7 @@ void shade()
 	for (int i = 0; i < out_image.Width(); i++)
 	{
 		for (int j = 0; j < out_image.Height(); j++)
-		{
-			if (i == 41 && j == 99)
-			{
-				int fuck = 1;
-			}
+		{		
 			float x_bias = (i - out_image.Width() * 1.0 / 2) / out_image.Width();
 			float y_bias = (j - out_image.Height() * 1.0 / 2) / out_image.Height();
 			Ray ray = camera->generateRay(Vec2f(x_bias, y_bias));

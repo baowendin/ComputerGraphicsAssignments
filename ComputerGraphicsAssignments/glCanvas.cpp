@@ -303,7 +303,9 @@ void GLCanvas::initialize(SceneParser* _scene,
     // Set global lighting parameters
     glEnable(GL_LIGHTING);
     glShadeModel(GL_SMOOTH);
-
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
     // Set window parameters
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
     glEnable(GL_DEPTH_TEST);
@@ -323,9 +325,7 @@ void GLCanvas::initialize(SceneParser* _scene,
     GLfloat ambArr[] = { ambColor.x(), ambColor.y(), ambColor.z(), 1.0 };
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambArr);
 
-    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-    glCullFace(GL_BACK);
-    glDisable(GL_CULL_FACE);
+    
 
     // Initialize callback functions
     glutMouseFunc(mouse);

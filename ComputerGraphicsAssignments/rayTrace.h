@@ -86,7 +86,7 @@ public:
 					Hit light_hit;
 					Ray light_ray(p, dir);
 					RayTracingStats::IncrementNumShadowRays();
-					if (group->intersect(light_ray, light_hit, EPSILON))
+ 					if (get_intersect(group, light_ray, light_hit, EPSILON))
 					{
 						if (dis > light_hit.getT())
 						{
