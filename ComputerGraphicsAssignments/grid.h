@@ -371,6 +371,7 @@ public:
 		}
 		return false;
 	}
+
 	bool check_insert(Object3D* object,const Ray& ray, Hit& hit, float tmin)
 	{
 		if (matrix_map.find(object) == matrix_map.end())

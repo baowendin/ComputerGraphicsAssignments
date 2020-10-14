@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include "vectors.h"
 
 class PerlinNoise {
 
@@ -33,6 +34,19 @@ public:
                     grad(p[BB + 1], x - 1, y - 1, z - 1))));
     }
 
+    static float getNoise(Vec3f point, float octaves)
+    {
+        float exponent = 1;
+        float ans = 0;
+        for (int i = 0; i < octaves; i++)
+        {
+            ans += PerlinNoise::noise(point.x(), point.y(), point.z()) / exponent;
+            exponent *= 2;
+            point *= 2;
+        }
+        return ans;
+    }
+
 private:
     static double fade(double t) {
         return t * t * t * (t * (t * 6 - 15) + 10);
@@ -48,6 +62,8 @@ private:
     }
     // permutation
     static int p[512];
+
+    
 };
 
 #endif

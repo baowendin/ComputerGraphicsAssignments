@@ -20,7 +20,7 @@ public:
 		// extend the boundingbox part
 		if (!object->getBoundingBox())
 			return;
-		if (object_group.size() == 1)
+		if (!boundingbox)
 		{
 			boundingbox = new BoundingBox(object->getBoundingBox()->getMin(), object->getBoundingBox()->getMax());
 		}
