@@ -152,6 +152,7 @@
     <ClInclude Include="matrix.h" />
     <ClInclude Include="object3d.h" />
     <ClInclude Include="orthographic.h" />
+    <ClInclude Include="perlin_noise.h" />
     <ClInclude Include="perspective.h" />
     <ClInclude Include="plane.h" />
     <ClInclude Include="ray.h" />
@@ -173,6 +174,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="matrix.cpp" />
+    <ClCompile Include="perlin_noise.cpp" />
     <ClCompile Include="raycast.cpp" />
     <ClCompile Include="rayTrace.cpp" />
     <ClCompile Include="raytracing_stats.cpp" />
