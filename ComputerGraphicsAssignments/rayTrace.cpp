@@ -8,11 +8,19 @@ float depth_min = 0;
 float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
+char* sample_file = NULL;
+char* filter_file = NULL;
 bool shade_back = false, gui_used = false, gouraud_used = false, grid_used = false, visualize_grid = false, tracing_stats = false;
+bool render_samples = false, render_filter = false;
 int nx, ny, nz;
 bool shadows = false;
 int max_bounces = 0, cutoff_weight;
 int theta_num = 20, phi_num = 10;
+int num_samples = 1;
+int sample_zoom;
+int filter_zoom;
+Sampler* sampler;
+Filter* filter;
 SceneParser* parser;
 Grid* grid = NULL;
 void shade();
@@ -97,6 +105,51 @@ void ray_trace(int argc, char** argv)
 		else if (!strcmp(argv[i], "-stats")) {
 			tracing_stats = true;
 		}
+		else if (!strcmp(argv[i], "-render_samples")) {
+			i++; assert(i < argc);
+			sample_file = argv[i];
+			i++; assert(i < argc);
+			sample_zoom = atoi(argv[i]);
+			render_samples = true;
+		}
+		else if (!strcmp(argv[i], "-random_samples")) {
+			i++; assert(i < argc);
+			num_samples = atoi(argv[i]);
+			sampler = new RandomSampler(num_samples);
+		}
+		else if (!strcmp(argv[i], "-uniform_samples")) {
+			i++; assert(i < argc);
+			num_samples = atoi(argv[i]);
+			sampler = new UniformSampler(num_samples);
+		}
+		else if (!strcmp(argv[i], "-jittered_samples")) {
+			i++; assert(i < argc);
+			num_samples = atoi(argv[i]);
+			sampler = new JitteredSampler(num_samples);
+		}
+		else if (!strcmp(argv[i], "-render_filter")) {
+
+			i++; assert(i < argc);
+			filter_file = argv[i];
+			i++; assert(i < argc);
+			filter_zoom = atoi(argv[i]);
+			render_filter = true;
+		}
+		else if (!strcmp(argv[i], "-box_filter")) {
+			i++; assert(i < argc);
+			float r = atof(argv[i]);
+			filter = new BoxFilter(r);
+		}
+		else if (!strcmp(argv[i], "-tent_filter")) {
+			i++; assert(i < argc);
+			float r = atof(argv[i]);
+			filter = new TentFilter(r);
+		}
+		else if (!strcmp(argv[i], "-gaussian_filter")) {
+			i++; assert(i < argc);
+			float r = atof(argv[i]);
+			filter = new GaussianFilter(r);
+		}
 		else {
 			printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
 			assert(0);
@@ -128,6 +181,7 @@ void ray_trace(int argc, char** argv)
 void shade()
 {
 	Image out_image(width, height);
+	Film film(width, height, num_samples);
 	Camera* camera = parser->getCamera();
 	float tmin = camera->getTMin();
 	RayTracer raytracer(parser, max_bounces, cutoff_weight, shadows, grid);
@@ -137,18 +191,42 @@ void shade()
 	for (int i = 0; i < out_image.Width(); i++)
 	{
 		for (int j = 0; j < out_image.Height(); j++)
-		{		
-			float x_bias = (i - out_image.Width() * 1.0 / 2) / out_image.Width();
-			float y_bias = (j - out_image.Height() * 1.0 / 2) / out_image.Height();
-			Ray ray = camera->generateRay(Vec2f(x_bias, y_bias));
-			Hit hit;
-			Vec3f color = raytracer.traceRay(ray, tmin, 0, 0, 1, hit);
-			out_image.SetPixel(i, j, color);
-			if (j == 0)
-				cout << i << j << endl;
-		}
-
+			for (int num = 0; num < num_samples; num++)
+			{
+				Vec2f pos = (sampler) ? sampler->getSamplePosition(num) : Vec2f(0, 0); //get sample position
+				float x_bias = (i - out_image.Width() * 1.0 / 2 + pos.x()) / out_image.Width();
+				float y_bias = (j - out_image.Height() * 1.0 / 2 + pos.y()) / out_image.Height();
+				Ray ray = camera->generateRay(Vec2f(x_bias, y_bias));
+				Hit hit;
+				Vec3f color = raytracer.traceRay(ray, tmin, 0, 0, 1, hit);
+				if (sampler && filter)
+					film.setSample(i, j, num, pos, color);
+				else
+					out_image.SetPixel(i, j, color);
+			}
 	}
+	if (sampler && filter)
+	{
+		for (int i = 0; i < out_image.Width(); i++)
+		{
+			for (int j = 0; j < out_image.Height(); j++)
+			{
+				Vec3f color = filter->getColor(i, j, &film);
+				out_image.SetPixel(i, j, color);
+			}
+		}
+	}
+
+	if (render_samples)
+	{
+		film.renderSamples(sample_file, sample_zoom);
+	}
+	
+	if (render_filter)
+	{
+		film.renderFilter(filter_file, filter_zoom, filter);
+	}
+	
 	if (tracing_stats)
 		RayTracingStats::PrintStatistics();
 	if (output_file)

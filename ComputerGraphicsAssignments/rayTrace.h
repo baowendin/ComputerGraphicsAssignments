@@ -14,6 +14,9 @@
 #include<assert.h>
 #include "raytracing_stats.h"
 #include"grid.h"
+#include "film.h"
+#include "sampler.h"
+#include "filter.h"
 #define EPSILON 0.01
 extern bool shade_back, gui_used, gouraud_used, visualize_grid;
 extern int theta_num, phi_num;
