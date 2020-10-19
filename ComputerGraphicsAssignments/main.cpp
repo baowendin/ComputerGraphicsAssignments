@@ -1,13 +1,39 @@
-#include<iostream>
-#include"raycast.h"
-#include"rayTrace.h"
-#include<Windows.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glut.h>
+#include <stdio.h>
+#include <assert.h>
 using namespace std;
-int main(int argc, char** argv)
-{
-	//ray_cast(argc, argv);
-	ray_trace(argc, argv);
+
+#include "arg_parser.h"
+#include "glCanvas.h"
+#include "spline_parser.h"
+
+// ====================================================================
+// ====================================================================
+
+int main(int argc, char* argv[]) {
+
+    // parse the command line arguments & input file
+    ArgParser* args = new ArgParser(argc, argv);
+    SplineParser* splines = new SplineParser(args->input_file);
+
+    // launch curve editor!
+    if (args->gui) {
+        GLCanvas glcanvas;
+        glcanvas.initialize(args, splines);
+        // this never returns...
+    }
+
+    // output as required
+    splines->SaveBezier(args);
+    splines->SaveBSpline(args);
+    splines->SaveTriangles(args);
+
+    // cleanup
+    delete args;
+    delete splines;
+    return 0;
 }
+
+// ====================================================================
+// ====================================================================
+
+

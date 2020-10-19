@@ -357,17 +357,6 @@ public:
         c.data[0] = x; c.data[1] = y; c.data[2] = z;
     }
 
-    static void Min(Vec3f& a, const Vec3f& b, const Vec3f& c) {
-        a.data[0] = (b.data[0] < c.data[0]) ? b.data[0] : c.data[0];
-        a.data[1] = (b.data[1] < c.data[1]) ? b.data[1] : c.data[1];
-        a.data[2] = (b.data[2] < c.data[2]) ? b.data[2] : c.data[2];
-    }
-    static void Max(Vec3f& a, const Vec3f& b, const Vec3f& c) {
-        a.data[0] = (b.data[0] > c.data[0]) ? b.data[0] : c.data[0];
-        a.data[1] = (b.data[1] > c.data[1]) ? b.data[1] : c.data[1];
-        a.data[2] = (b.data[2] > c.data[2]) ? b.data[2] : c.data[2];
-    }
-
     // INPUT / OUTPUT
     void Write(FILE* F = stdout) const {
         fprintf(F, "%f %f %f\n", data[0], data[1], data[2]);
