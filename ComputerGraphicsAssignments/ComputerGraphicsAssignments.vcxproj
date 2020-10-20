@@ -139,25 +139,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="arg_parser.h" />
-    <ClInclude Include="curve.h" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="glCanvas.h" />
     <ClInclude Include="matrix.h" />
-    <ClInclude Include="spline.h" />
-    <ClInclude Include="spline_parser.h" />
-    <ClInclude Include="surface.h" />
-    <ClInclude Include="triangle_mesh.h" />
+    <ClInclude Include="parser.h" />
+    <ClInclude Include="particleSet.h" />
+    <ClInclude Include="random.h" />
+    <ClInclude Include="system.h" />
     <ClInclude Include="vectors.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glCanvas.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="matrix.cpp" />
-    <ClCompile Include="spline_parser.cpp" />
-    <ClCompile Include="triangle_mesh.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <ClCompile Include="parser.cpp" />
+    <ClCompile Include="particle.cpp" />
+    <ClCompile Include="particle.h" />
+    <ClCompile Include="system.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

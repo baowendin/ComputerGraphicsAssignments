@@ -2,10 +2,9 @@
 #define _GL_CANVAS_H_
 
 #include <stdlib.h>
+#include "vectors.h"
 
-class ArgParser;
-class SplineParser;
-class Spline;
+class Parser;
 
 // ====================================================================
 // A simplied version of the code from the OpenGL assignment
@@ -20,21 +19,31 @@ public:
     // Set up the canvas and enter the rendering loop
     // Note that this function will not return but can be
     // terminated by calling 'exit(0)'
-    static void initialize(ArgParser* args, SplineParser* splines);
+    static void initialize(Parser* parser, float refresh, float dt,
+        int integrator_color, int draw_vectors,
+        float acceleration_scale, int motion_blur);
 
 private:
 
-    static ArgParser* args;
-    static SplineParser* splines;
+    // the system
+    static Parser* parser;
 
-    // viewport information
+    // viewport & mouse
+    static Vec3f camera_pos;
     static int width;
     static int height;
-    static float size;
+    static int mouse_button;
+    static int mouse_x;
+    static int mouse_y;
 
-    // the currently selected point (for editing)
-    static Spline* selected_spline;
-    static int selected_control_point;
+    // actions & rendering
+    static int paused;
+    static float refresh;
+    static float dt;
+    static int integrator_color;
+    static int draw_vectors;
+    static float acceleration_scale;
+    static int motion_blur;
 
     // Callback functions for mouse and keyboard events
     static void display(void);
@@ -42,7 +51,11 @@ private:
     static void mouse(int button, int state, int x, int y);
     static void motion(int x, int y);
     static void keyboard(unsigned char key, int x, int y);
-    static void mouseToScreen(int i, int j, float& x, float& y, float& epsilon);
+    static void idle(int value);
+
+    // helper functions
+    static void step();
+    static void restart();
 };
 
 // ====================================================================
