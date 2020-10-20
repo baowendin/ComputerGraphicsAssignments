@@ -142,6 +142,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ForceField.h" />
     <ClInclude Include="glCanvas.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="parser.h" />
