@@ -34,6 +34,12 @@
     <ClInclude Include="ForceField.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="integrator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="generator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="matrix.cpp">

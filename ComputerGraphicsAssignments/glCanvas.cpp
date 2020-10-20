@@ -57,6 +57,9 @@ void GLCanvas::initialize(Parser* _parser, float _refresh, float _dt,
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
     glutInitWindowSize(width, height);
     glutInitWindowPosition(100, 100);
+    int argc = 0;
+    char** argv = NULL;
+    glutInit(&argc, argv);
     glutCreateWindow("Particle System");
 
     // Ambient light

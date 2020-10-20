@@ -3,7 +3,7 @@
 class ForceField
 {
 public:
-	virtual Vec3f getAcceleration(const Vec3f& position, float mass, float t) const = 0;
+	virtual Vec3f getAcceleration(const Vec3f& position, float mass, float t) = 0;
 };
 
 class GravityForceField : public ForceField
@@ -37,4 +37,36 @@ public:
 		return force * (1.0 / mass);
 	}
 
+};
+
+class RadialForceField : public ForceField
+{
+protected:
+	float magnitude;
+public:
+	RadialForceField(float magnitude)
+	{
+		this->magnitude = magnitude;
+	}
+
+	virtual Vec3f getAcceleration(const Vec3f& position, float mass, float t)
+	{
+		return position * magnitude * -1;
+	}
+};
+
+class VerticalForceField : public ForceField
+{
+protected:
+	float magnitude;
+public:
+	VerticalForceField(float magnitude)
+	{
+		this->magnitude = magnitude;
+	}
+
+	virtual Vec3f getAcceleration(const Vec3f& position, float mass, float t)
+	{
+		return Vec3f(0, position.y() * magnitude * -1, 0);
+	}
 };
