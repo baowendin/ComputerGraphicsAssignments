@@ -142,7 +142,7 @@ public:
 
 	BSplineCurve(int l) : Curve(l) {}
 
-		vector<Vec3f> calculate_points(int tessellation)
+	vector<Vec3f> calculate_points(int tessellation)
 	{
 		vector<Vec3f> result;
 		float unit_len = 1. / tessellation;

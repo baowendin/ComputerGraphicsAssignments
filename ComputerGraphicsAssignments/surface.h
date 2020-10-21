@@ -62,8 +62,8 @@ public:
         }
         return newmesh;
 	}
-};
 
+};
 class BezierPatch : public Surface
 {
     vector<Vec3f> vertices;
