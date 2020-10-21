@@ -1,9 +1,8 @@
-// Included files for OpenGL Rendering
+    // Included files for OpenGL Rendering
+#include "particle.h"
 #include <Windows.h>
 #include <GL/gl.h>
 #include <GL/glut.h>
-
-#include "particle.h"
 
 
 void Particle::increaseAge(float a) {

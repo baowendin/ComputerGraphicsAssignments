@@ -43,13 +43,13 @@ public:
 static Vec3f get_random_v()
 {
     static Random random;
-    return Vec3f(random.next(), random.next(), random.next());
+    return Vec3f(random.next() - 0.5, random.next() - 0.5, random.next() - 0.5) * 2;
 }
 
 static float get_random_f()
 {
     static Random random;
-    return random.next();
+    return (random.next() - 0.5) * 2;
 }
 
 class HoseGenerator : public Generator
@@ -70,7 +70,7 @@ public:
 
     virtual int numNewParticles(float current_time, float dt) const
     {
-        return desired_num_particles * (1. / lifespan) * dt;
+        return ceil(desired_num_particles * (1. / lifespan) * dt);
     }
 
     virtual Particle* Generate(float current_time, int i)

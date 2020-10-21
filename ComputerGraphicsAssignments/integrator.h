@@ -38,7 +38,7 @@ public:
 	{
 		Vec3f p_m = particle->getPosition() + particle->getVelocity() * (dt / 2);
 		Vec3f v_m = particle->getVelocity() + forcefield->getAcceleration(particle->getPosition(), particle->getMass(), t) * (dt / 2);
-
+		
 		particle->setPosition(particle->getPosition() + v_m * dt);
 		particle->setVelocity(particle->getVelocity() + forcefield->getAcceleration(p_m, particle->getMass(), t + dt / 2) * dt);
 
